@@ -49,6 +49,14 @@
     const cols=r.table?.cols||[];
     const i=cols.findIndex(c=>String(c.label||'').trim().toLowerCase()==='миссия');
     if(i>=0&&cols[i+1]){const m=num(cols[i+1].label);if(m>0)return m;}
+    for(const row of r.table?.rows||[]){
+      const cells=row.c||[];
+      for(let k=0;k<cells.length;k++){
+        if(String(cells[k]?.v??'').trim().toLowerCase()==='миссия'){
+          const m=num(cells[k+1]?.v);if(m>0)return m;
+        }
+      }
+    }
     return null;
   }
   async function loadRaw(){
