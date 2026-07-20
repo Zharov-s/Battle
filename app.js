@@ -45,12 +45,18 @@
   function normalize(rows){
     return rows.map(r=>({date:r['Дата оплаты']||r['Дата']||'',manager:r['ФИО МПП']||'',amount:num(r['Сумма продажи']),product:r['Продукт продажи']||''}));
   }
+  function missionFromGviz(r){
+    const cols=r.table?.cols||[];
+    const i=cols.findIndex(c=>String(c.label||'').trim().toLowerCase()==='миссия');
+    if(i>=0&&cols[i+1]){const m=num(cols[i+1].label);if(m>0)return m;}
+    return null;
+  }
   async function loadRaw(){
     if(cfg.API_URL) return jsonp(cfg.API_URL);
     const riv=await gviz(cfg.SHEETS.riviera);
     const gra=await gviz(cfg.SHEETS.grand);
     const ups=await gviz(cfg.SHEETS.upsells);
-    return buildPayload(normalize(rowsFromGviz(riv)),normalize(rowsFromGviz(gra)),normalize(rowsFromGviz(ups)));
+    return buildPayload(normalize(rowsFromGviz(riv)),normalize(rowsFromGviz(gra)),normalize(rowsFromGviz(ups)),missionFromGviz(riv),missionFromGviz(gra));
   }
   function validSale(r,upsell=false,legacyNoDates=false){
     const allowed=['МКБ','МОБ','РКЛ','РСП','Проверка гостей'];
@@ -61,9 +67,10 @@
     const valid=rows.filter(r=>validSale(r,false,legacyNoDates)); const fact=valid.reduce((s,r)=>s+r.amount,0); const base=mission/cfg.HOTEL_PRICE; const total=Math.floor(fact/cfg.HOTEL_PRICE);
     return {team_key:key,city_name:city,team_name:name,mission_amount:mission,fact_amount:fact,progress_percent:mission?fact/mission*100:0,remaining_amount:Math.max(mission-fact,0),overplan_amount:Math.max(fact-mission,0),sales_count:valid.length,base_hotels:base,purchased_hotels_base:Math.min(total,base),extra_hotels:Math.max(total-base,0),current_hotel_fill:(fact%cfg.HOTEL_PRICE)/cfg.HOTEL_PRICE};
   }
-  function buildPayload(rivRows,graRows,upRows){
+  function buildPayload(rivRows,graRows,upRows,rivMission,graMission){
     const legacyNoDates=!rivRows.concat(graRows,upRows).some(r=>String(r.date||'').trim());
-    const teams=[team('grand_city','Гранд-Сити','Команда Шкильнюка',2000000,graRows,legacyNoDates),team('riviera_city','Ривьера-Сити','Команда Китаевой',2500000,rivRows,legacyNoDates)];
+    const grandMission=graMission||2000000, rivM=rivMission||2500000;
+    const teams=[team('grand_city','Гранд-Сити','Команда Шкильнюка',grandMission,graRows,legacyNoDates),team('riviera_city','Ривьера-Сити','Команда Китаевой',rivM,rivRows,legacyNoDates)];
     const totalFact=teams.reduce((s,t)=>s+t.fact_amount,0), totalMission=teams.reduce((s,t)=>s+t.mission_amount,0);
     const leader=teams[0].progress_percent===teams[1].progress_percent?null:[...teams].sort((a,b)=>b.progress_percent-a.progress_percent)[0];
     const ranking={}; upRows.filter(r=>validSale(r,true,legacyNoDates)).forEach(r=>{ranking[r.manager]??={manager:r.manager,upsell_amount:0,upsell_count:0};ranking[r.manager].upsell_amount+=r.amount;ranking[r.manager].upsell_count++});
@@ -100,13 +107,36 @@
     <section class="summary-grid"><article class="card metric"><div class="metric-label">Общий бюджет</div><div class="metric-value">${money(data.overall.total_mission)}</div><div class="metric-sub">миссии двух городов</div></article><article class="card metric"><div class="metric-label">Освоено</div><div class="metric-value">${money(data.overall.total_fact)}</div><div class="metric-sub">все оплаты команд</div></article><article class="card metric"><div class="metric-label">Общее выполнение</div><div class="metric-value">${data.overall.total_progress_percent.toFixed(1).replace('.',',')}%</div><div class="metric-sub">по совокупному бюджету</div></article><article class="card metric"><div class="metric-label">Лидер</div><div class="metric-value leader-value">${esc(data.overall.leader_label)}</div><div class="metric-sub">по проценту своей миссии</div></article></section>
     <section class="cities">${cityCard(grand,'grand')}${hotelMap(data.teams)}${cityCard(riv,'riviera')}</section>
     <section class="lower-grid"><article class="card panel"><div class="section-head"><h2>Личный зачет</h2><span class="small">Топ-5 по допродажам</span></div><div class="ranking">${data.manager_top.length?data.manager_top.map(r=>`<div class="rank-row"><div class="rank">${r.rank}</div><div><div class="manager">${esc(r.manager)}</div><div class="manager-sub">${r.upsell_count} оплат</div></div><div class="rank-amount">${money(r.upsell_amount)}</div></div>`).join(''):'<div class="small">Пока нет валидных допродаж за период игры.</div>'}</div></article><article class="card panel"><div class="section-head"><h2>Продажи по продуктам</h2><span class="small">Суммы оплат двух команд</span></div><div id="productsChart" class="chart"></div></article><article class="card panel"><div class="section-head"><h2>Правила</h2></div><div class="rules"><div class="rule"><div class="rule-icon">1</div><div><strong>Одна строка — одна оплата</strong><p>В командный факт входит сумма каждой корректной строки на листе команды.</p></div></div><div class="rule"><div class="rule-icon">%</div><div><strong>Сравниваем выполнение</strong><p>Лидер определяется только по проценту выполнения собственной миссии.</p></div></div><div class="rule"><div class="rule-icon">🏨</div><div><strong>Покупаем отели</strong><p>Каждые ${money(cfg.HOTEL_PRICE)} открывают один отель. Перевыполнение показывается выше 100%.</p></div></div><div class="rule"><div class="rule-icon">★</div><div><strong>Личный рейтинг</strong><p>Считаются допродажи МКБ, МОБ, РКЛ, РСП и «Проверка гостей».</p></div></div></div></article></section>
-    <section class="card quality ${data.data_quality.status==='ok'?'ok':'warn'}"><strong>${data.data_quality.status==='ok'?'Контроль данных: ошибок не найдено':'Контроль данных: нужна проверка'}</strong><span>${data.data_quality.warnings?.length?esc(data.data_quality.warnings.join(' • ')):(data.data_quality.error_count?`Ошибочных строк: ${data.data_quality.error_count}`:'Все строки, попавшие в расчеты, заполнены корректно.')}</span></section></div>`;
+    <section class="card quality ${data.data_quality.status==='ok'?'ok':'warn'}"><span class="q-icon">${data.data_quality.status==='ok'?'✓':'!'}</span><div class="q-text"><strong>${data.data_quality.status==='ok'?'Контроль данных: ошибок не найдено':'Контроль данных: нужна проверка'}</strong><span>${data.data_quality.warnings?.length?esc(data.data_quality.warnings.join(' • ')):(data.data_quality.error_count?`Ошибочных строк: ${data.data_quality.error_count}`:'Все строки, попавшие в расчеты, заполнены корректно.')}</span></div></section></div>`;
     document.getElementById('refresh').onclick=load;
     drawProducts(data.product_distribution);
   }
   function drawProducts(rows){
-    const el=document.getElementById('productsChart'); if(!window.echarts||!el){el.innerHTML='<div class="small">Диаграмма недоступна</div>';return}
-    const chart=echarts.init(el);charts.push(chart);chart.setOption({animationDuration:550,grid:{left:8,right:18,top:8,bottom:12,containLabel:true},tooltip:{trigger:'axis',axisPointer:{type:'shadow'},valueFormatter:v=>money(v)},xAxis:{type:'value',axisLabel:{formatter:v=>`${Math.round(v/1000)} тыс.`},splitLine:{lineStyle:{color:'#eceae4'}}},yAxis:{type:'category',data:rows.map(r=>r.product).reverse(),axisTick:{show:false},axisLine:{show:false},axisLabel:{color:'#4f5b55'}},series:[{type:'bar',data:rows.map(r=>r.amount_total).reverse(),barMaxWidth:28,itemStyle:{color:'#aa7c2f',borderRadius:[0,7,7,0]}}]});window.addEventListener('resize',()=>chart.resize(),{once:true});
+    const el=document.getElementById('productsChart'); if(!window.echarts||!el){if(el)el.innerHTML='<div class="small">Диаграмма недоступна</div>';return}
+    if(!rows.length){el.innerHTML='<div class="small">Пока нет данных о продажах по продуктам.</div>';return}
+    const cs=getComputedStyle(document.documentElement);
+    const grand=cs.getPropertyValue('--grand').trim()||'#8f2d25';
+    const riviera=cs.getPropertyValue('--riviera').trim()||'#176b52';
+    const ink=cs.getPropertyValue('--ink').trim()||'#17201c';
+    const muted='#69736e', line='#e9e7e1';
+    const cats=rows.map(r=>r.product).reverse();
+    const axisMoney=v=>v>=1e6?`${(v/1e6).toLocaleString('ru-RU',{maximumFractionDigits:1})} млн`:v>=1e3?`${Math.round(v/1e3)} тыс.`:`${v}`;
+    const chart=echarts.init(el,null,{renderer:'svg'});charts.push(chart);
+    chart.setOption({
+      textStyle:{fontFamily:'Inter,ui-sans-serif,system-ui,sans-serif'},
+      color:[grand,riviera],
+      legend:{top:0,left:0,icon:'roundRect',itemWidth:11,itemHeight:11,itemGap:18,textStyle:{color:muted,fontSize:12,fontWeight:600}},
+      grid:{left:0,right:14,top:38,bottom:0,containLabel:true},
+      tooltip:{trigger:'axis',axisPointer:{type:'shadow'},backgroundColor:'#fff',borderColor:line,borderWidth:1,padding:[10,13],textStyle:{color:ink,fontSize:12},extraCssText:'box-shadow:0 10px 30px rgba(20,29,41,.13);border-radius:12px;',valueFormatter:v=>money(v)},
+      xAxis:{type:'value',axisLine:{show:false},axisTick:{show:false},axisLabel:{color:muted,fontSize:11,formatter:axisMoney},splitLine:{lineStyle:{color:line,type:'dashed'}}},
+      yAxis:{type:'category',data:cats,axisLine:{show:false},axisTick:{show:false},axisLabel:{color:ink,fontSize:12,fontWeight:600}},
+      series:[
+        {name:'Гранд-Сити',type:'bar',barWidth:10,barGap:'35%',data:rows.map(r=>r.amount_grand_city).reverse(),itemStyle:{borderRadius:[0,5,5,0]},emphasis:{focus:'series'}},
+        {name:'Ривьера-Сити',type:'bar',barWidth:10,data:rows.map(r=>r.amount_riviera_city).reverse(),itemStyle:{borderRadius:[0,5,5,0]},emphasis:{focus:'series'}}
+      ],
+      animationDuration:650,animationEasing:'cubicOut'
+    });
+    window.addEventListener('resize',()=>chart.resize(),{once:true});
   }
   async function load(){
     if(!app.querySelector('.dashboard')) app.innerHTML='<div class="state-card"><div class="spinner"></div><h1>МОНОПОЛИЯ</h1><p>Загружаем данные из Google Sheets…</p></div>';
