@@ -16,27 +16,24 @@
 .market-stats>div+div{border-left:1px solid var(--line)}
 .market-stats span{font-size:11px;color:var(--muted)}
 .market-stats strong{font-size:18px}
-.market-outcomes{display:grid;grid-template-columns:1fr 1fr}
-.market-outcome{padding:24px 26px 26px;min-width:0}
-.market-outcome+.market-outcome{border-left:1px solid var(--line)}
-.market-outcome-head{display:flex;align-items:start;justify-content:space-between;gap:14px}
-.market-outcome-head span{font-size:11px;color:var(--muted);font-weight:700}
-.market-outcome-head h3{margin:4px 0 0;font:700 22px Georgia}
-.market-outcome-head b{padding:5px 9px;border:1px solid var(--line);border-radius:999px;color:var(--muted);font-size:9px;letter-spacing:.08em;text-transform:uppercase}
-.market-outcome.lead .market-outcome-head b{color:var(--ink)}
-.market-outcome.grand.lead .market-outcome-head b{border-color:var(--grand)}
-.market-outcome.riviera.lead .market-outcome-head b{border-color:var(--riviera)}
-.market-score{margin:22px 0 10px;font-size:clamp(38px,5vw,60px);font-weight:900;line-height:.9;letter-spacing:-.055em}
-.market-outcome.grand .market-score{color:var(--grand)}
-.market-outcome.riviera .market-score{color:var(--riviera)}
-.market-money{display:flex;align-items:baseline;gap:7px;margin-bottom:17px}
-.market-money strong{font-size:15px}.market-money span{font-size:11px;color:var(--muted)}
-.market-progress{height:7px;overflow:hidden;border-radius:999px;background:#162c43}
-.market-progress i{display:block;height:100%;border-radius:inherit;transition:width .65s ease}
-.market-outcome.grand .market-progress i{background:var(--grand)}
-.market-outcome.riviera .market-progress i{background:var(--riviera)}
-@media(max-width:700px){.market-head{align-items:flex-start;padding:12px 20px}.market-head>span{display:none}.market-question{padding:22px 20px 19px;align-items:flex-start;flex-direction:column}.market-leader{justify-items:start;text-align:left}.market-stats{grid-template-columns:1fr}.market-stats>div{padding:11px 20px;grid-template-columns:1fr auto;align-items:center}.market-stats>div+div{border-left:0;border-top:1px solid var(--line)}.market-outcomes{grid-template-columns:1fr}.market-outcome{padding:21px 20px 23px}.market-outcome+.market-outcome{border-left:0;border-top:1px solid var(--line)}}
-@media(prefers-reduced-motion:reduce){.market-progress i{transition:none}}
+.market-vote{padding:25px 26px 27px}
+.market-vote-labels,.market-vote-meta{display:grid;grid-template-columns:1fr 1fr;gap:32px}
+.market-vote-labels>div{display:grid;gap:5px}
+.market-vote-labels .riviera,.market-vote-meta>div:last-child{justify-items:end;text-align:right}
+.market-vote-labels span{font-size:11px;color:var(--muted);font-weight:750;text-transform:uppercase;letter-spacing:.07em}
+.market-vote-labels strong{font-size:clamp(35px,4.4vw,54px);line-height:.95;letter-spacing:-.045em}
+.market-vote-labels .grand strong{color:var(--grand)}
+.market-vote-labels .riviera strong{color:var(--riviera)}
+.market-split{height:20px;margin:19px 0 14px;position:relative;display:flex;overflow:hidden;border-radius:999px;background:#162c43}
+.market-split>i{display:block;height:100%;transition:width .65s ease}
+.market-split>.grand{background:var(--grand)}
+.market-split>.riviera{background:var(--riviera)}
+.market-split:after{content:"";position:absolute;z-index:1;left:var(--split);top:-5px;width:15px;height:30px;background:var(--surface);transform:translateX(-50%) skew(-25deg)}
+.market-vote-meta>div{display:grid;gap:3px}
+.market-vote-meta strong{font-size:15px}
+.market-vote-meta span{font-size:11px;color:var(--muted)}
+@media(max-width:700px){.market-head{align-items:flex-start;padding:12px 20px}.market-head>span{display:none}.market-question{padding:22px 20px 19px;align-items:flex-start;flex-direction:column}.market-leader{justify-items:start;text-align:left}.market-stats{grid-template-columns:1fr}.market-stats>div{padding:11px 20px;grid-template-columns:1fr auto;align-items:center}.market-stats>div+div{border-left:0;border-top:1px solid var(--line)}.market-vote{padding:22px 20px 24px}.market-vote-labels,.market-vote-meta{gap:18px}.market-vote-labels strong{font-size:31px}.market-vote-meta strong{font-size:13px}}
+@media(prefers-reduced-motion:reduce){.market-split>i{transition:none}}
 
 /* Night palette */
 :root{--bg:#06111f;--surface:#0b1b2e;--surface-2:#0f243b;--ink:#f4f7fb;--muted:#91a6bf;--line:#203852;--grand:#68a6ff;--grand-soft:rgba(104,166,255,.14);--riviera:#aa91ff;--riviera-soft:rgba(170,145,255,.14);--gold:#f2d279;--shadow:0 18px 46px rgba(0,6,15,.22)}
