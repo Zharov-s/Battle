@@ -1,5 +1,6 @@
 (() => {
   const app = document.getElementById('app');
+  const initialLoaderMarkup = app.innerHTML;
   const cfg = window.MONOPOLY_CONFIG;
   const charts = [];
   const fmt = n => new Intl.NumberFormat('ru-RU').format(Math.round(Number(n)||0));
@@ -173,7 +174,7 @@
     window.addEventListener('resize',()=>chart.resize(),{once:true});
   }
   async function load(){
-    if(!app.querySelector('.dashboard')) app.innerHTML='<div class="state-card"><div class="spinner"></div><h1>Монополия</h1><p>Загружаем данные из Google Sheets…</p></div>';
+    if(!app.querySelector('.dashboard')) app.innerHTML=initialLoaderMarkup;
     try{render(await loadRaw())}catch(e){app.innerHTML=`<div class="state-card"><h1>Данные недоступны</h1><p>${esc(e.message)}</p><button class="refresh-btn" id="retry">Повторить</button><p class="small">Для прямого чтения таблицы включите доступ «Все, у кого есть ссылка — читатель». Альтернативно опубликуйте Apps Script из папки apps-script и укажите URL в config.js.</p></div>`;document.getElementById('retry').onclick=load}
   }
   load();setInterval(load,cfg.REFRESH_MS||300000);

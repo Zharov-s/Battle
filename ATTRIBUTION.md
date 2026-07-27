@@ -14,3 +14,5 @@
 - 21st.dev Prediction Market Card by Isaiah: https://21st.dev/@isaiahbjork/components/prediction-market-card (структура адаптирована под сравнение команд без React-зависимостей)
 - Uiverse theme switch by abinandhs_7835 (разметка и стили предоставлены владельцем проекта)
 - Unbounded font by NaN (SIL Open Font License 1.1; license: `assets/fonts/Unbounded-OFL.txt`)
+- Uiverse 3D Cube Loader by dexter-st: https://uiverse.io/dexter-st/spicy-otter-30 (MIT License)
+- Poppins ExtraBold by Indian Type Foundry / Jonny Pinhorn (SIL Open Font License 1.1; license: `assets/fonts/Poppins-OFL.txt`)
