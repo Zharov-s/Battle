@@ -11,3 +11,4 @@
 - Aceternity Floating Dock: https://ui.aceternity.com/components/floating-dock (не использован: одностраничной навигации достаточно)
 - 21st.dev Sidebar: https://21st.dev/@jshguo/components/sidebar-component (не использован: sidebar утяжеляет одностраничный дашборд)
 - Untitled UI Activity Gauges: https://www.untitledui.com/react/components/activity-gauges
+- 21st.dev Prediction Market Card by Isaiah: https://21st.dev/@isaiahbjork/components/prediction-market-card (структура адаптирована под сравнение команд без React-зависимостей)
