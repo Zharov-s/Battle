@@ -14,6 +14,7 @@
     const d=new Date(s); return isNaN(d)?null:d;
   };
   const inPeriod = d => d && d >= new Date(cfg.PERIOD_START+'T00:00:00+03:00') && d <= new Date(cfg.PERIOD_END+'T23:59:59+03:00');
+  const inWeeklyPeriod = d => d && d >= new Date(cfg.WEEKLY_START+'T00:00:00+03:00') && d <= new Date(cfg.WEEKLY_END+'T23:59:59+03:00');
   const num = v => { const n=Number(String(v??'').replace(/\s/g,'').replace(',','.')); return Number.isFinite(n)?n:0; };
 
   function jsonp(url, callbackParam='callback'){
@@ -75,6 +76,14 @@
     const valid=rows.filter(r=>validSale(r,false,legacyNoDates)); const fact=valid.reduce((s,r)=>s+r.amount,0); const base=mission/cfg.HOTEL_PRICE; const total=Math.floor(fact/cfg.HOTEL_PRICE);
     return {team_key:key,city_name:city,team_name:name,mission_amount:mission,fact_amount:fact,progress_percent:mission?fact/mission*100:0,remaining_amount:Math.max(mission-fact,0),overplan_amount:Math.max(fact-mission,0),sales_count:valid.length,base_hotels:base,purchased_hotels_base:Math.min(total,base),extra_hotels:Math.max(total-base,0),current_hotel_fill:(fact%cfg.HOTEL_PRICE)/cfg.HOTEL_PRICE};
   }
+  function weeklyTeam(key,name,rows){
+    const goal=cfg.WEEKLY_MISSIONS[key];
+    const dated=rows.filter(r=>inWeeklyPeriod(parseDate(r.date))&&r.manager.trim()&&r.amount>0);
+    const hasDates=rows.some(r=>parseDate(r.date));
+    const currentTotal=rows.filter(r=>r.manager.trim()&&r.amount>0).reduce((sum,r)=>sum+r.amount,0);
+    const fact=hasDates?dated.reduce((sum,r)=>sum+r.amount,0):Math.max(currentTotal-cfg.WEEKLY_BASELINES[key],0);
+    return {team_key:key,team_name:name,mission_amount:goal,fact_amount:fact,remaining_amount:Math.max(goal-fact,0),progress_percent:goal?fact/goal*100:0};
+  }
   function buildPayload(rivRows,graRows,upRows,rivMission,graMission){
     const legacyNoDates=!rivRows.concat(graRows,upRows).some(r=>String(r.date||'').trim());
     const grandMission=graMission||2000000, rivM=rivMission||2500000;
@@ -86,12 +95,20 @@
     const products={}; [...graRows.filter(r=>validSale(r,false,legacyNoDates)).map(r=>({...r,key:'grand_city'})),...rivRows.filter(r=>validSale(r,false,legacyNoDates)).map(r=>({...r,key:'riviera_city'}))].forEach(r=>{const p=r.product||'Без продукта';products[p]??={product:p,amount_total:0,amount_grand_city:0,amount_riviera_city:0};products[p].amount_total+=r.amount;products[p]['amount_'+r.key]+=r.amount});
     const product_distribution=Object.values(products).sort((a,b)=>b.amount_total-a.amount_total).map(p=>({...p,share_percent:totalFact?p.amount_total/totalFact*100:0}));
     const all=[...rivRows,...graRows]; const errors=all.filter(r=>r.manager||r.amount||r.product||r.date).filter(r=>!validSale(r,false,legacyNoDates)).length + upRows.filter(r=>r.manager||r.amount||r.product||r.date).filter(r=>!validSale(r,true,legacyNoDates)).length;
-    const warnings=[]; if(legacyNoDates) warnings.push('В таблице пока нет столбца «Дата оплаты»: временно учитываются все заполненные тестовые строки. Добавьте даты до старта игры.');
-    return {meta:{game_title:'МОНОПОЛИЯ',subtitle:'Игровая механика для команд подключений',period_start:cfg.PERIOD_START,period_end:cfg.PERIOD_END,hotel_price:cfg.HOTEL_PRICE,generated_at:new Date().toISOString()},teams,overall:{total_mission:totalMission,total_fact:totalFact,total_progress_percent:totalFact/totalMission*100,total_remaining:Math.max(totalMission-totalFact,0),leader_team_key:leader?.team_key||null,leader_label:leader?.city_name||'Равенство'},manager_top,product_distribution,data_quality:{status:(errors||legacyNoDates)?'warning':'ok',error_count:errors,warnings:warnings.concat(errors?[`Строк вне периода или с незаполненными обязательными полями: ${errors}`]:[])}};
+    const warnings=[]; if(legacyNoDates) warnings.push('В таблице нет столбца «Дата оплаты»: недельная миссия считается как прирост относительно сумм на начало 27 июля.');
+    return {meta:{game_title:'Монополия - Дожимаем месяц',subtitle:'Игровая механика для команд подключений',period_start:cfg.PERIOD_START,period_end:cfg.PERIOD_END,hotel_price:cfg.HOTEL_PRICE,generated_at:new Date().toISOString()},weekly_mission:{period_start:cfg.WEEKLY_START,period_end:cfg.WEEKLY_END,teams:[weeklyTeam('grand_city','Команда Шкильнюка',graRows),weeklyTeam('riviera_city','Команда Китаевой',rivRows)]},teams,overall:{total_mission:totalMission,total_fact:totalFact,total_progress_percent:totalFact/totalMission*100,total_remaining:Math.max(totalMission-totalFact,0),leader_team_key:leader?.team_key||null,leader_label:leader?.city_name||'Равенство'},manager_top,product_distribution,data_quality:{status:(errors||legacyNoDates)?'warning':'ok',error_count:errors,warnings:warnings.concat(errors?[`Строк вне периода или с незаполненными обязательными полями: ${errors}`]:[])}};
   }
   const dateRu=s=>new Intl.DateTimeFormat('ru-RU',{day:'numeric',month:'long',year:'numeric'}).format(new Date(s+'T12:00:00+03:00'));
   function gauge(t){return `<div class="gauge" style="--p:${Math.min(t.progress_percent,100)}"><div class="gauge-content"><div class="progress-number">${t.progress_percent.toFixed(1).replace('.',',')}%</div><div class="gauge-caption">выполнение миссии</div></div></div>`}
   function cityCard(t,cls){return `<article class="card city-card ${cls}"><div class="city-kicker">${esc(t.team_name)}</div><div class="city-title">${esc(t.city_name)}</div><div class="team-name">Каждая оплата приближает город к полной покупке отелей</div><div class="gauge-wrap">${gauge(t)}</div><div class="city-stats"><div class="stat"><span>Миссия</span><strong>${money(t.mission_amount)}</strong></div><div class="stat"><span>Факт</span><strong>${money(t.fact_amount)}</strong></div><div class="stat"><span>Остаток</span><strong>${money(t.remaining_amount)}</strong></div><div class="stat"><span>Оплаченных продаж</span><strong>${fmt(t.sales_count)}</strong></div></div>${t.overplan_amount?`<div class="overplan">Перевыполнение: ${money(t.overplan_amount)}</div>`:''}${cls==='riviera'?`<figure class="champion"><img src="./assets/champion-riviera.jpg?v=1" alt="Королева продаж — Ривьера-Сити" loading="lazy" width="896" height="1184"></figure>`:''}</article>`}
+  function weeklyMission(weekly){
+    const teamCard=t=>{
+      const cls=t.team_key==='grand_city'?'grand':'riviera';
+      const complete=t.remaining_amount===0;
+      return `<article class="weekly-team ${cls}"><div class="weekly-team-head"><span>${esc(t.team_name)}</span><small>Цель ${money(t.mission_amount)}</small></div><div class="weekly-remaining"><span>${complete?'Цель выполнена':'Осталось собрать'}</span><strong>${money(t.remaining_amount)}</strong></div><div class="weekly-track" role="progressbar" aria-label="Выполнение недельной миссии ${esc(t.team_name)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.min(Math.round(t.progress_percent),100)}"><i style="width:${Math.min(t.progress_percent,100)}%"></i></div><div class="weekly-fact">Собрано ${money(t.fact_amount)} · ${t.progress_percent.toFixed(1).replace('.',',')}%</div></article>`;
+    };
+    return `<section class="card weekly"><div class="weekly-heading"><div><div class="eyebrow">Миссия на неделю</div><h2>Дожимаем до пятницы</h2></div><span>${dateRu(weekly.period_start)} — ${dateRu(weekly.period_end)}</span></div><div class="weekly-grid">${weekly.teams.map(teamCard).join('')}</div></section>`;
+  }
   function versus(data){
     const g=data.teams.find(t=>t.team_key==='grand_city'), r=data.teams.find(t=>t.team_key==='riviera_city');
     const gp=g.progress_percent, rp=r.progress_percent, sum=gp+rp;
@@ -110,7 +127,8 @@
   }
   function render(data){
     charts.splice(0).forEach(c=>c.dispose()); const [grand,riv]=[data.teams.find(t=>t.team_key==='grand_city'),data.teams.find(t=>t.team_key==='riviera_city')];
-    app.innerHTML=`<div class="dashboard"><section class="hero"><article class="card hero-main"><div><div class="eyebrow">Командная игровая механика</div><h1>МОНОПОЛИЯ</h1><p class="hero-copy">Два города осваивают собственный бюджет. Каждая оплаченная продажа приближает команду к покупке всех отелей.</p><div class="period">📅 ${dateRu(data.meta.period_start)} — ${dateRu(data.meta.period_end)}</div></div><div class="hero-mark">M</div></article><aside class="card update"><div class="update-row"><span class="status-dot"></span>Данные обновляются</div><div class="small">Последнее обновление</div><strong>${new Intl.DateTimeFormat('ru-RU',{dateStyle:'medium',timeStyle:'short',timeZone:cfg.TIMEZONE}).format(new Date(data.meta.generated_at))}</strong><button class="refresh-btn" id="refresh">Обновить сейчас</button></aside></section>
+    app.innerHTML=`<div class="dashboard"><section class="hero"><article class="card hero-main"><div><div class="eyebrow">Командная игровая механика</div><h1>Монополия <span>- Дожимаем месяц</span></h1><p class="hero-copy">Два города осваивают собственный бюджет. Каждая оплаченная продажа приближает команду к покупке всех отелей.</p><div class="period">📅 ${dateRu(data.meta.period_start)} — ${dateRu(data.meta.period_end)}</div></div><div class="hero-mark" aria-hidden="true"></div></article><aside class="card update"><div class="update-row"><span class="status-dot"></span>Данные обновляются</div><div class="small">Последнее обновление</div><strong>${new Intl.DateTimeFormat('ru-RU',{dateStyle:'medium',timeStyle:'short',timeZone:cfg.TIMEZONE}).format(new Date(data.meta.generated_at))}</strong><button class="refresh-btn" id="refresh">Обновить сейчас</button></aside></section>
+    ${weeklyMission(data.weekly_mission)}
     ${versus(data)}
     <section class="summary-grid"><article class="card metric"><div class="metric-label">Общий бюджет</div><div class="metric-value">${money(data.overall.total_mission)}</div><div class="metric-sub">миссии двух городов</div></article><article class="card metric"><div class="metric-label">Освоено</div><div class="metric-value">${money(data.overall.total_fact)}</div><div class="metric-sub">все оплаты команд</div></article><article class="card metric"><div class="metric-label">Общее выполнение</div><div class="metric-value">${data.overall.total_progress_percent.toFixed(1).replace('.',',')}%</div><div class="metric-sub">по совокупному бюджету</div></article><article class="card metric"><div class="metric-label">Лидер</div><div class="metric-value leader-value">${esc(data.overall.leader_label)}</div><div class="metric-sub">по проценту своей миссии</div></article></section>
     <section class="cities">${cityCard(grand,'grand')}${hotelMap(data.teams)}${cityCard(riv,'riviera')}</section>
@@ -125,8 +143,10 @@
     const cs=getComputedStyle(document.documentElement);
     const grand=cs.getPropertyValue('--grand').trim()||'#8f2d25';
     const riviera=cs.getPropertyValue('--riviera').trim()||'#176b52';
-    const ink=cs.getPropertyValue('--ink').trim()||'#17201c';
-    const muted='#69736e', line='#e9e7e1';
+    const ink=cs.getPropertyValue('--ink').trim()||'#f4f7fb';
+    const muted=cs.getPropertyValue('--muted').trim()||'#91a6bf';
+    const line=cs.getPropertyValue('--line').trim()||'#203852';
+    const surface=cs.getPropertyValue('--surface').trim()||'#0b1b2e';
     const cats=rows.map(r=>r.product).reverse();
     const axisMoney=v=>v>=1e6?`${(v/1e6).toLocaleString('ru-RU',{maximumFractionDigits:1})} млн`:v>=1e3?`${Math.round(v/1e3)} тыс.`:`${v}`;
     const chart=echarts.init(el,null,{renderer:'svg'});charts.push(chart);
@@ -135,7 +155,7 @@
       color:[grand,riviera],
       legend:{top:0,left:0,icon:'roundRect',itemWidth:11,itemHeight:11,itemGap:18,textStyle:{color:muted,fontSize:12,fontWeight:600}},
       grid:{left:0,right:14,top:38,bottom:0,containLabel:true},
-      tooltip:{trigger:'axis',axisPointer:{type:'shadow'},backgroundColor:'#fff',borderColor:line,borderWidth:1,padding:[10,13],textStyle:{color:ink,fontSize:12},extraCssText:'box-shadow:0 10px 30px rgba(20,29,41,.13);border-radius:12px;',valueFormatter:v=>money(v)},
+      tooltip:{trigger:'axis',axisPointer:{type:'shadow'},backgroundColor:surface,borderColor:line,borderWidth:1,padding:[10,13],textStyle:{color:ink,fontSize:12},extraCssText:'box-shadow:0 10px 30px rgba(0,6,15,.3);border-radius:12px;',valueFormatter:v=>money(v)},
       xAxis:{type:'value',axisLine:{show:false},axisTick:{show:false},axisLabel:{color:muted,fontSize:11,formatter:axisMoney},splitLine:{lineStyle:{color:line,type:'dashed'}}},
       yAxis:{type:'category',data:cats,axisLine:{show:false},axisTick:{show:false},axisLabel:{color:ink,fontSize:12,fontWeight:600}},
       series:[
@@ -147,7 +167,7 @@
     window.addEventListener('resize',()=>chart.resize(),{once:true});
   }
   async function load(){
-    if(!app.querySelector('.dashboard')) app.innerHTML='<div class="state-card"><div class="spinner"></div><h1>МОНОПОЛИЯ</h1><p>Загружаем данные из Google Sheets…</p></div>';
+    if(!app.querySelector('.dashboard')) app.innerHTML='<div class="state-card"><div class="spinner"></div><h1>Монополия - Дожимаем месяц</h1><p>Загружаем данные из Google Sheets…</p></div>';
     try{render(await loadRaw())}catch(e){app.innerHTML=`<div class="state-card"><h1>Данные недоступны</h1><p>${esc(e.message)}</p><button class="refresh-btn" id="retry">Повторить</button><p class="small">Для прямого чтения таблицы включите доступ «Все, у кого есть ссылка — читатель». Альтернативно опубликуйте Apps Script из папки apps-script и укажите URL в config.js.</p></div>`;document.getElementById('retry').onclick=load}
   }
   load();setInterval(load,cfg.REFRESH_MS||300000);

@@ -38,3 +38,49 @@
 .tug-legend .small{text-align:center}
 @media(max-width:760px){.versus-grid{grid-template-columns:1fr;gap:16px}.vs-side,.vs-side.grand,.vs-side.riviera{justify-items:center;text-align:center}.vs-center{order:-1}.tug-legend .small{display:none}}
 @media(prefers-reduced-motion:reduce){.tug-fill,.tug-knob,.vs-side{transition:none}}
+
+/* Night palette */
+:root{--bg:#06111f;--surface:#0b1b2e;--surface-2:#0f243b;--ink:#f4f7fb;--muted:#91a6bf;--line:#203852;--grand:#68a6ff;--grand-soft:rgba(104,166,255,.14);--riviera:#aa91ff;--riviera-soft:rgba(170,145,255,.14);--gold:#f2d279;--shadow:0 18px 46px rgba(0,6,15,.22)}
+body{background:var(--bg)}
+.hero-main{position:relative}
+.hero-main>div:first-child{position:relative;z-index:1}
+.hero-main:before{content:"✦";position:absolute;right:190px;top:27px;color:rgba(242,210,121,.65);font-size:9px;box-shadow:76px 45px 0 rgba(244,247,251,.32),-38px 76px 0 rgba(244,247,251,.22),108px 104px 0 rgba(242,210,121,.38)}
+h1 span{display:block;margin-top:10px;font-family:Inter,ui-sans-serif,sans-serif;font-size:.38em;font-weight:750;letter-spacing:-.02em;color:var(--muted)}
+.hero-mark{position:relative;border:0;background:transparent;color:transparent}
+.hero-mark:before{content:"";width:72px;height:72px;border-radius:50%;background:var(--gold);box-shadow:inset 24px -8px 0 0 var(--surface),0 0 28px rgba(242,210,121,.16)}
+.period,.vs-pill{background:var(--surface-2)}
+.status-dot{background:#69d7b0;box-shadow:0 0 0 6px rgba(105,215,176,.12)}
+.gauge{background:conic-gradient(var(--accent) calc(min(var(--p),100)*1%),#162c43 0)}
+.stat{border-color:var(--line)}
+.overplan{background:rgba(242,210,121,.11);color:var(--gold)}
+.rank{background:rgba(242,210,121,.12)}
+.rule-icon{background:var(--surface-2)}
+.quality.ok{border-color:rgba(105,215,176,.36)}
+.quality.warn{border-color:rgba(242,210,121,.42);background:var(--surface)}
+.quality.ok .q-icon{background:rgba(105,215,176,.12);color:#69d7b0}
+.quality.warn .q-icon{background:rgba(242,210,121,.12);color:var(--gold)}
+.spinner{border-color:var(--line);border-top-color:var(--gold)}
+.vs-badge{background:#10243a;box-shadow:0 0 0 5px rgba(242,210,121,.08),0 16px 32px rgba(0,6,15,.3)}
+.tug-track{background:#142a42}
+.tug-knob{background:var(--surface)}
+
+/* Fixed weekly money countdown */
+.weekly{padding:24px 26px}
+.weekly-heading{display:flex;justify-content:space-between;align-items:end;gap:18px;margin-bottom:20px}
+.weekly-heading h2{margin:5px 0 0;font:700 clamp(25px,3vw,34px) Georgia}
+.weekly-heading>span{font-size:13px;color:var(--muted);font-weight:700}
+.weekly-grid{display:grid;grid-template-columns:1fr 1fr;gap:26px}
+.weekly-team{min-width:0}
+.weekly-team-head{display:flex;justify-content:space-between;gap:16px;align-items:center;font-size:14px;font-weight:800}
+.weekly-team-head small{color:var(--muted);font-size:12px;font-weight:650}
+.weekly-remaining{display:flex;justify-content:space-between;align-items:baseline;gap:16px;margin:20px 0 13px}
+.weekly-remaining span{font-size:12px;color:var(--muted)}
+.weekly-remaining strong{font-size:clamp(28px,3.5vw,46px);line-height:1;letter-spacing:-.04em}
+.weekly-team.grand .weekly-remaining strong{color:var(--grand)}
+.weekly-team.riviera .weekly-remaining strong{color:var(--riviera)}
+.weekly-track{height:7px;overflow:hidden;border-radius:999px;background:#162c43}
+.weekly-track i{display:block;height:100%;border-radius:inherit;transition:width .65s ease}
+.weekly-team.grand .weekly-track i{background:var(--grand)}
+.weekly-team.riviera .weekly-track i{background:var(--riviera)}
+.weekly-fact{margin-top:9px;color:var(--muted);font-size:12px;text-align:right}
+@media(max-width:700px){.weekly{padding:21px}.weekly-heading{align-items:start;flex-direction:column;gap:8px}.weekly-grid{grid-template-columns:1fr;gap:27px}.weekly-team-head,.weekly-remaining{align-items:flex-start;flex-direction:column;gap:5px}.weekly-remaining{margin-top:16px}.weekly-fact{text-align:left}}

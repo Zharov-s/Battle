@@ -4,6 +4,16 @@ window.MONOPOLY_CONFIG = {
   REFRESH_MS: 300000,
   PERIOD_START: '2026-07-20',
   PERIOD_END: '2026-08-31',
+  WEEKLY_START: '2026-07-27',
+  WEEKLY_END: '2026-07-31',
+  WEEKLY_MISSIONS: {
+    grand_city: 400000,
+    riviera_city: 500000
+  },
+  WEEKLY_BASELINES: {
+    grand_city: 407021.80,
+    riviera_city: 833268.57
+  },
   HOTEL_PRICE: 100000,
   TIMEZONE: 'Europe/Moscow',
   SHEETS: {
