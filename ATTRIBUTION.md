@@ -12,3 +12,4 @@
 - 21st.dev Sidebar: https://21st.dev/@jshguo/components/sidebar-component (не использован: sidebar утяжеляет одностраничный дашборд)
 - Untitled UI Activity Gauges: https://www.untitledui.com/react/components/activity-gauges
 - 21st.dev Prediction Market Card by Isaiah: https://21st.dev/@isaiahbjork/components/prediction-market-card (структура адаптирована под сравнение команд без React-зависимостей)
+- Uiverse theme switch by abinandhs_7835 (разметка и стили предоставлены владельцем проекта)
