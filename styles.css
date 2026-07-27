@@ -186,3 +186,26 @@ h1 span{font-family:inherit}
 @keyframes face-color {0%,50%,100%{background-color:var(--cube-color)}10%{background-color:var(--highlight-color)}}
 @keyframes face-glow {0%,50%,100%{color:#fff0;filter:none}30%{color:#fff;filter:drop-shadow(0 14px 10px var(--highlight-color))}}
 @keyframes edge-glow {0%,40%,100%{box-shadow:inset 0 0 2px 1px #0001,inset 0 0 12px 1px #fff1}30%{box-shadow:0 0 2px 0 var(--highlight-color)}}
+
+/* Full-bleed cinematic header and tighter dashboard geometry */
+:root{--radius:9px;--radius-sm:6px}
+.page-shell{width:100%;margin:0;padding:0 0 36px}
+.dashboard>:not(.hero){width:min(1540px,calc(100% - 32px));margin-inline:auto}
+.hero{width:100%;max-width:none;margin:0}
+.hero-main.hero-cinematic{width:100%;min-height:0;height:clamp(320px,33.333vw,620px);border:0;border-radius:0;box-shadow:none}
+.period,.refresh-btn{border-radius:8px}
+.champion img,.rank-row{border-radius:6px}
+.hotel{border-radius:5px}
+.rule-icon{border-radius:4px}
+.loading-screen{min-height:100vh}
+@media(max-width:700px){
+  .dashboard{gap:12px}
+  .dashboard>:not(.hero){width:calc(100% - 18px)}
+  .hero-main.hero-cinematic{height:auto;min-height:0;aspect-ratio:900/474;padding:15px 12px}
+  .hero-video{object-fit:cover;object-position:center 70%}
+  .hero-title{width:calc(100% - 62px);justify-self:start;text-align:left}
+  .hero-title h1{font-size:clamp(20px,5.5vw,26px)}
+  .hero-title h1 span{font-size:clamp(12px,3.4vw,16px)}
+  .hero-cinematic .theme-control{top:8px;right:8px}
+  .theme-switch{transform:scale(.56)}
+}
