@@ -10,10 +10,6 @@ window.MONOPOLY_CONFIG = {
     grand_city: 400000,
     riviera_city: 500000
   },
-  WEEKLY_BASELINES: {
-    grand_city: 407021.80,
-    riviera_city: 833268.57
-  },
   HOTEL_PRICE: 100000,
   TIMEZONE: 'Europe/Moscow',
   SHEETS: {

@@ -80,9 +80,7 @@
   function weeklyTeam(key,name,rows){
     const goal=cfg.WEEKLY_MISSIONS[key];
     const dated=rows.filter(r=>inWeeklyPeriod(parseDate(r.date))&&r.manager.trim()&&r.amount>0);
-    const hasDates=rows.some(r=>parseDate(r.date));
-    const currentTotal=rows.filter(r=>r.manager.trim()&&r.amount>0).reduce((sum,r)=>sum+r.amount,0);
-    const fact=hasDates?dated.reduce((sum,r)=>sum+r.amount,0):Math.max(currentTotal-cfg.WEEKLY_BASELINES[key],0);
+    const fact=dated.reduce((sum,r)=>sum+r.amount,0);
     return {team_key:key,team_name:name,mission_amount:goal,fact_amount:fact,remaining_amount:Math.max(goal-fact,0),progress_percent:goal?fact/goal*100:0};
   }
   function buildPayload(rivRows,graRows,upRows,rivMission,graMission){
@@ -96,8 +94,9 @@
     const products={}; [...graRows.filter(r=>validSale(r,false,legacyNoDates)).map(r=>({...r,key:'grand_city'})),...rivRows.filter(r=>validSale(r,false,legacyNoDates)).map(r=>({...r,key:'riviera_city'}))].forEach(r=>{const p=r.product||'Без продукта';products[p]??={product:p,amount_total:0,amount_grand_city:0,amount_riviera_city:0};products[p].amount_total+=r.amount;products[p]['amount_'+r.key]+=r.amount});
     const product_distribution=Object.values(products).sort((a,b)=>b.amount_total-a.amount_total).map(p=>({...p,share_percent:totalFact?p.amount_total/totalFact*100:0}));
     const all=[...rivRows,...graRows]; const errors=all.filter(r=>r.manager||r.amount||r.product||r.date).filter(r=>!validSale(r,false,legacyNoDates)).length + upRows.filter(r=>r.manager||r.amount||r.product||r.date).filter(r=>!validSale(r,true,legacyNoDates)).length;
-    const warnings=[]; if(legacyNoDates) warnings.push('В таблице нет столбца «Дата оплаты»: недельная миссия считается как прирост относительно сумм на начало 27 июля.');
-    return {meta:{game_title:'Монополия - Дожимаем месяц',subtitle:'Игровая механика для команд подключений',period_start:cfg.PERIOD_START,period_end:cfg.PERIOD_END,hotel_price:cfg.HOTEL_PRICE,generated_at:new Date().toISOString()},weekly_mission:{period_start:cfg.WEEKLY_START,period_end:cfg.WEEKLY_END,teams:[weeklyTeam('grand_city','Команда Шкильнюка',graRows),weeklyTeam('riviera_city','Команда Китаевой',rivRows)]},teams,overall:{total_mission:totalMission,total_fact:totalFact,total_progress_percent:totalFact/totalMission*100,total_remaining:Math.max(totalMission-totalFact,0),leader_team_key:leader?.team_key||null,leader_label:leader?.city_name||'Равенство'},manager_top,product_distribution,data_quality:{status:(errors||legacyNoDates)?'warning':'ok',error_count:errors,warnings:warnings.concat(errors?[`Строк вне периода или с незаполненными обязательными полями: ${errors}`]:[])}};
+    const weeklyNoDates=!rivRows.concat(graRows).some(r=>parseDate(r.date));
+    const warnings=[]; if(weeklyNoDates) warnings.push('В командных листах нет корректных дат: строки без даты не учитываются в недельной миссии за 27–31 июля.');
+    return {meta:{game_title:'Монополия - Дожимаем месяц',subtitle:'Игровая механика для команд подключений',period_start:cfg.PERIOD_START,period_end:cfg.PERIOD_END,hotel_price:cfg.HOTEL_PRICE,generated_at:new Date().toISOString()},weekly_mission:{period_start:cfg.WEEKLY_START,period_end:cfg.WEEKLY_END,teams:[weeklyTeam('grand_city','Команда Шкильнюка',graRows),weeklyTeam('riviera_city','Команда Китаевой',rivRows)]},teams,overall:{total_mission:totalMission,total_fact:totalFact,total_progress_percent:totalFact/totalMission*100,total_remaining:Math.max(totalMission-totalFact,0),leader_team_key:leader?.team_key||null,leader_label:leader?.city_name||'Равенство'},manager_top,product_distribution,data_quality:{status:(errors||legacyNoDates||weeklyNoDates)?'warning':'ok',error_count:errors,warnings:warnings.concat(errors?[`Строк вне периода или с незаполненными обязательными полями: ${errors}`]:[])}};
   }
   const dateRu=s=>new Intl.DateTimeFormat('ru-RU',{day:'numeric',month:'long',year:'numeric'}).format(new Date(s+'T12:00:00+03:00'));
   function gauge(t){return `<div class="gauge" style="--p:${Math.min(t.progress_percent,100)}"><div class="gauge-content"><div class="progress-number">${t.progress_percent.toFixed(1).replace('.',',')}%</div><div class="gauge-caption">выполнение миссии</div></div></div>`}
@@ -174,8 +173,11 @@
     window.addEventListener('resize',()=>chart.resize(),{once:true});
   }
   async function load(){
-    if(!app.querySelector('.dashboard')) app.innerHTML=initialLoaderMarkup;
-    try{render(await loadRaw())}catch(e){app.innerHTML=`<div class="state-card"><h1>Данные недоступны</h1><p>${esc(e.message)}</p><button class="refresh-btn" id="retry">Повторить</button><p class="small">Для прямого чтения таблицы включите доступ «Все, у кого есть ссылка — читатель». Альтернативно опубликуйте Apps Script из папки apps-script и укажите URL в config.js.</p></div>`;document.getElementById('retry').onclick=load}
+    const showLoader=!app.querySelector('.dashboard');
+    const loadingStarted=performance.now();
+    if(showLoader) app.innerHTML=initialLoaderMarkup;
+    const waitForLoader=()=>new Promise(resolve=>setTimeout(resolve,Math.max(0,3000-(performance.now()-loadingStarted))));
+    try{const data=await loadRaw();if(showLoader)await waitForLoader();render(data)}catch(e){if(showLoader)await waitForLoader();app.innerHTML=`<div class="state-card"><h1>Данные недоступны</h1><p>${esc(e.message)}</p><button class="refresh-btn" id="retry">Повторить</button><p class="small">Для прямого чтения таблицы включите доступ «Все, у кого есть ссылка — читатель». Альтернативно опубликуйте Apps Script из папки apps-script и укажите URL в config.js.</p></div>`;document.getElementById('retry').onclick=load}
   }
   load();setInterval(load,cfg.REFRESH_MS||300000);
 })();
