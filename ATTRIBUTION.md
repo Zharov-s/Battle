@@ -13,3 +13,4 @@
 - Untitled UI Activity Gauges: https://www.untitledui.com/react/components/activity-gauges
 - 21st.dev Prediction Market Card by Isaiah: https://21st.dev/@isaiahbjork/components/prediction-market-card (структура адаптирована под сравнение команд без React-зависимостей)
 - Uiverse theme switch by abinandhs_7835 (разметка и стили предоставлены владельцем проекта)
+- Unbounded font by NaN (SIL Open Font License 1.1; license: `assets/fonts/Unbounded-OFL.txt`)
