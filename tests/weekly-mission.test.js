@@ -11,8 +11,8 @@ vm.runInContext(source, context);
 const sale = (date, amount = 100000) => ({ date, manager: 'Менеджер', amount });
 
 {
-  const result = context.weeklyTeam_('grand_city', 'Команда', [sale('', 100000), sale('', 50000)]);
-  assert.equal(result.fact_amount, 150000, 'лист без дат должен передавать весь факт в недельную миссию');
+  const result = context.weeklyTeam_('grand_city', 'Команда', [sale('', 407021.8), sale('', 21311)]);
+  assert.equal(result.fact_amount, 21311, 'лист без дат должен считать недельный прирост от базы на 27 июля');
 }
 
 {
