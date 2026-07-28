@@ -5,6 +5,7 @@ const CONFIG = {
   WEEKLY_START: new Date('2026-07-27T00:00:00+03:00'),
   WEEKLY_END: new Date('2026-07-31T23:59:59+03:00'),
   WEEKLY_MISSIONS: { grand_city: 400000, riviera_city: 500000 },
+  WEEKLY_BASELINES: { grand_city: 407021.8, riviera_city: 757682.67 },
   HOTEL_PRICE: 100000,
   SHEETS: { RIVIERA: 'Китаева', GRAND: 'Шкильнюк', UPSELLS: 'Допродажи' }
 };
@@ -33,4 +34,4 @@ function read_(sheet){if(!sheet)return[];const values=sheet.getDataRange().getVa
 function parseDate_(value){if(value instanceof Date&&!isNaN(value))return value;if(!value)return null;const s=String(value).trim();const m=s.match(/^(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{4})$/);if(m)return new Date(Number(m[3]),Number(m[2])-1,Number(m[1]),12,0,0);const d=new Date(s);return isNaN(d)?null:d;}
 function valid_(r,upsell){const d=parseDate_(r.date);const allowed=['МКБ','МОБ','РКЛ','РСП','Проверка гостей'];return d&&d>=CONFIG.PERIOD_START&&d<=CONFIG.PERIOD_END&&r.manager&&r.amount>0&&(!upsell||allowed.indexOf(r.product)>-1);}
 function team_(key,city,name,mission,rows){const valid=rows.filter(r=>valid_(r,false));const fact=valid.reduce((s,r)=>s+r.amount,0);const base=mission/CONFIG.HOTEL_PRICE,total=Math.floor(fact/CONFIG.HOTEL_PRICE);return {team_key:key,city_name:city,team_name:name,mission_amount:mission,fact_amount:fact,progress_percent:mission?fact/mission*100:0,remaining_amount:Math.max(mission-fact,0),overplan_amount:Math.max(fact-mission,0),sales_count:valid.length,base_hotels:base,purchased_hotels_base:Math.min(total,base),extra_hotels:Math.max(total-base,0),current_hotel_fill:(fact%CONFIG.HOTEL_PRICE)/CONFIG.HOTEL_PRICE};}
-function weeklyTeam_(key,name,rows){const goal=CONFIG.WEEKLY_MISSIONS[key];const hasDates=rows.some(r=>parseDate_(r.date));const eligible=rows.filter(r=>{const d=parseDate_(r.date);return (!hasDates||(d&&d>=CONFIG.WEEKLY_START&&d<=CONFIG.WEEKLY_END))&&r.manager&&r.amount>0;});const fact=eligible.reduce((s,r)=>s+r.amount,0);return {team_key:key,team_name:name,mission_amount:goal,fact_amount:fact,remaining_amount:Math.max(goal-fact,0),progress_percent:goal?fact/goal*100:0};}
+function weeklyTeam_(key,name,rows){const goal=CONFIG.WEEKLY_MISSIONS[key];const hasDates=rows.some(r=>parseDate_(r.date));const valid=rows.filter(r=>r.manager&&r.amount>0);const fact=hasDates?valid.filter(r=>{const d=parseDate_(r.date);return d&&d>=CONFIG.WEEKLY_START&&d<=CONFIG.WEEKLY_END;}).reduce((s,r)=>s+r.amount,0):Math.max(valid.reduce((s,r)=>s+r.amount,0)-(CONFIG.WEEKLY_BASELINES[key]||0),0);return {team_key:key,team_name:name,mission_amount:goal,fact_amount:fact,remaining_amount:Math.max(goal-fact,0),progress_percent:goal?fact/goal*100:0};}
