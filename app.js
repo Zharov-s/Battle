@@ -80,10 +80,10 @@
   function weeklyTeam(key,name,rows){
     const goal=cfg.WEEKLY_MISSIONS[key];
     const hasDates=rows.some(r=>parseDate(r.date));
-    const valid=rows.filter(r=>r.manager.trim()&&r.amount>0);
-    const fact=hasDates
-      ? valid.filter(r=>inWeeklyPeriod(parseDate(r.date))).reduce((sum,r)=>sum+r.amount,0)
-      : Math.max(valid.reduce((sum,r)=>sum+r.amount,0)-(cfg.WEEKLY_BASELINES[key]||0),0);
+    const startIndex=Math.max((cfg.WEEKLY_START_ROWS[key]||2)-2,0);
+    const source=hasDates?rows:rows.slice(startIndex);
+    const valid=source.filter(r=>r.manager.trim()&&r.amount>0);
+    const fact=(hasDates?valid.filter(r=>inWeeklyPeriod(parseDate(r.date))):valid).reduce((sum,r)=>sum+r.amount,0);
     return {team_key:key,team_name:name,mission_amount:goal,fact_amount:fact,remaining_amount:Math.max(goal-fact,0),progress_percent:goal?fact/goal*100:0};
   }
   function buildPayload(rivRows,graRows,upRows,rivMission,graMission){
@@ -97,9 +97,9 @@
     const products={}; [...graRows.filter(r=>validSale(r,false,legacyNoDates)).map(r=>({...r,key:'grand_city'})),...rivRows.filter(r=>validSale(r,false,legacyNoDates)).map(r=>({...r,key:'riviera_city'}))].forEach(r=>{const p=r.product||'Без продукта';products[p]??={product:p,amount_total:0,amount_grand_city:0,amount_riviera_city:0};products[p].amount_total+=r.amount;products[p]['amount_'+r.key]+=r.amount});
     const product_distribution=Object.values(products).sort((a,b)=>b.amount_total-a.amount_total).map(p=>({...p,share_percent:totalFact?p.amount_total/totalFact*100:0}));
     const all=[...rivRows,...graRows]; const errors=all.filter(r=>r.manager||r.amount||r.product||r.date).filter(r=>!validSale(r,false,legacyNoDates)).length + upRows.filter(r=>r.manager||r.amount||r.product||r.date).filter(r=>!validSale(r,true,legacyNoDates)).length;
-    const weeklyBaselineMode=[graRows,rivRows].some(rows=>rows.some(r=>r.manager.trim()&&r.amount>0)&&!rows.some(r=>parseDate(r.date)));
-    const warnings=[]; if(weeklyBaselineMode) warnings.push('В командном листе нет дат: недельный факт рассчитан как прирост к снимку на начало 27 июля.');
-    return {meta:{game_title:'Sales Kombat',subtitle:'Игровая механика для команд подключений',period_start:cfg.PERIOD_START,period_end:cfg.PERIOD_END,hotel_price:cfg.HOTEL_PRICE,generated_at:new Date().toISOString()},weekly_mission:{period_start:cfg.WEEKLY_START,period_end:cfg.WEEKLY_END,teams:[weeklyTeam('grand_city','Команда Шкильнюка',graRows),weeklyTeam('riviera_city','Команда Китаевой',rivRows)]},teams,overall:{total_mission:totalMission,total_fact:totalFact,total_progress_percent:totalFact/totalMission*100,total_remaining:Math.max(totalMission-totalFact,0),leader_team_key:leader?.team_key||null,leader_label:leader?.city_name||'Равенство'},manager_top,product_distribution,data_quality:{status:(errors||legacyNoDates||weeklyBaselineMode)?'warning':'ok',error_count:errors,warnings:warnings.concat(errors?[`Строк вне периода или с незаполненными обязательными полями: ${errors}`]:[])}};
+    const weeklyRowMode=[graRows,rivRows].some(rows=>rows.some(r=>r.manager.trim()&&r.amount>0)&&!rows.some(r=>parseDate(r.date)));
+    const warnings=[]; if(weeklyRowMode) warnings.push('В командных листах нет дат: недельный факт считается со строки 20 для Шкильнюка и со строки 36 для Китаевой.');
+    return {meta:{game_title:'Sales Kombat',subtitle:'Игровая механика для команд подключений',period_start:cfg.PERIOD_START,period_end:cfg.PERIOD_END,hotel_price:cfg.HOTEL_PRICE,generated_at:new Date().toISOString()},weekly_mission:{period_start:cfg.WEEKLY_START,period_end:cfg.WEEKLY_END,teams:[weeklyTeam('grand_city','Команда Шкильнюка',graRows),weeklyTeam('riviera_city','Команда Китаевой',rivRows)]},teams,overall:{total_mission:totalMission,total_fact:totalFact,total_progress_percent:totalFact/totalMission*100,total_remaining:Math.max(totalMission-totalFact,0),leader_team_key:leader?.team_key||null,leader_label:leader?.city_name||'Равенство'},manager_top,product_distribution,data_quality:{status:(errors||legacyNoDates||weeklyRowMode)?'warning':'ok',error_count:errors,warnings:warnings.concat(errors?[`Строк вне периода или с незаполненными обязательными полями: ${errors}`]:[])}};
   }
   const dateRu=s=>new Intl.DateTimeFormat('ru-RU',{day:'numeric',month:'long',year:'numeric'}).format(new Date(s+'T12:00:00+03:00'));
   function gauge(t){return `<div class="gauge" style="--p:${Math.min(t.progress_percent,100)}"><div class="gauge-content"><div class="progress-number">${t.progress_percent.toFixed(1).replace('.',',')}%</div><div class="gauge-caption">выполнение миссии</div></div></div>`}

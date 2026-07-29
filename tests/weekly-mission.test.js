@@ -11,8 +11,15 @@ vm.runInContext(source, context);
 const sale = (date, amount = 100000) => ({ date, manager: 'Менеджер', amount });
 
 {
-  const result = context.weeklyTeam_('grand_city', 'Команда', [sale('', 407021.8), sale('', 21311)]);
-  assert.equal(result.fact_amount, 21311, 'лист без дат должен считать недельный прирост от базы на 27 июля');
+  const rows = Array.from({ length: 18 }, () => sale('', 1000)).concat([sale('', 21311), sale('', 7596)]);
+  const result = context.weeklyTeam_('grand_city', 'Команда', rows);
+  assert.equal(result.fact_amount, 28907, 'Шкильнюк: факт должен считаться со строки 20');
+}
+
+{
+  const rows = Array.from({ length: 34 }, () => sale('', 1000)).concat([sale('', 7381), sale('', 45205.2)]);
+  const result = context.weeklyTeam_('riviera_city', 'Команда', rows);
+  assert.equal(result.fact_amount, 52586.2, 'Китаева: факт должен считаться со строки 36');
 }
 
 {
