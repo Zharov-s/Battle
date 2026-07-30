@@ -3,6 +3,7 @@
   const initialLoaderMarkup = app.innerHTML;
   const cfg = window.MONOPOLY_CONFIG;
   const charts = [];
+  let stopMissionConfetti = () => {};
   const fmt = n => new Intl.NumberFormat('ru-RU').format(Math.round(Number(n)||0));
   const money = n => `${fmt(n)} ₽`;
   const esc = s => String(s ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
@@ -108,9 +109,59 @@
     const teamCard=t=>{
       const cls=t.team_key==='grand_city'?'grand':'riviera';
       const complete=t.remaining_amount===0;
-      return `<article class="weekly-team ${cls}"><div class="weekly-team-head"><span>${esc(t.team_name)}</span><small>Цель ${money(t.mission_amount)}</small></div><div class="weekly-remaining"><span>${complete?'Цель выполнена':'Осталось собрать'}</span><strong>${money(t.remaining_amount)}</strong></div><div class="weekly-track" role="progressbar" aria-label="Выполнение недельной миссии ${esc(t.team_name)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.min(Math.round(t.progress_percent),100)}"><i style="width:${Math.min(t.progress_percent,100)}%"></i></div><div class="weekly-fact">Собрано ${money(t.fact_amount)} · ${t.progress_percent.toFixed(1).replace('.',',')}%</div></article>`;
+      const celebrate=complete&&t.team_key==='riviera_city';
+      return `<article class="weekly-team ${cls}${complete?' is-complete':''}">${celebrate?'<canvas class="mission-confetti" aria-hidden="true"></canvas>':''}<div class="weekly-team-head"><span>${esc(t.team_name)}</span><small>Цель ${money(t.mission_amount)}</small></div><div class="weekly-remaining"><span>${complete?'Цель выполнена':'Осталось собрать'}</span><strong>${money(t.remaining_amount)}</strong></div><div class="weekly-track" role="progressbar" aria-label="Выполнение недельной миссии ${esc(t.team_name)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.min(Math.round(t.progress_percent),100)}"><i style="width:${Math.min(t.progress_percent,100)}%"></i></div><div class="weekly-fact">Собрано ${money(t.fact_amount)} · ${t.progress_percent.toFixed(1).replace('.',',')}%</div></article>`;
     };
     return `<section class="card weekly"><div class="weekly-heading"><div><div class="eyebrow">Миссия на неделю</div><h2>Дожимаем до пятницы</h2></div><span>${dateRu(weekly.period_start)} — ${dateRu(weekly.period_end)}</span></div><div class="weekly-grid">${weekly.teams.map(teamCard).join('')}</div></section>`;
+  }
+  function startMissionConfetti(){
+    stopMissionConfetti();
+    const canvas=document.querySelector('.weekly-team.riviera.is-complete .mission-confetti');
+    if(!canvas||matchMedia('(prefers-reduced-motion: reduce)').matches){stopMissionConfetti=()=>{};return}
+    const ctx=canvas.getContext('2d');
+    if(!ctx){stopMissionConfetti=()=>{};return}
+    const colors=['#4fc3b2','#e5bd63','#69a8f7','#f4f7fa','#ff7b72'];
+    let width=0,height=0,frame=0,particles=[],started=0,burstStep=-1;
+    const resize=()=>{
+      const rect=canvas.getBoundingClientRect();
+      const ratio=Math.min(window.devicePixelRatio||1,2);
+      width=rect.width;height=rect.height;
+      canvas.width=Math.max(1,Math.round(width*ratio));canvas.height=Math.max(1,Math.round(height*ratio));
+      ctx.setTransform(ratio,0,0,ratio,0,0);
+    };
+    const burst=(x,y,direction,count=54)=>{
+      for(let i=0;i<count;i++){
+        const speed=3.4+Math.random()*5.2;
+        const angle=direction+(Math.random()-.5)*1.35;
+        particles.push({x,y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,gravity:.105+Math.random()*.045,drag:.982,rotation:Math.random()*Math.PI,spin:(Math.random()-.5)*.24,size:4+Math.random()*5,life:0,maxLife:72+Math.random()*44,color:colors[i%colors.length],shape:Math.random()>.3?'rect':'circle'});
+      }
+    };
+    const fire=()=>{particles=[];started=performance.now();burstStep=-1;cancelAnimationFrame(frame);frame=requestAnimationFrame(draw)};
+    const draw=now=>{
+      const elapsed=now-started;
+      const nextStep=Math.min(2,Math.floor(elapsed/520));
+      while(burstStep<nextStep){
+        burstStep++;
+        if(burstStep===0){burst(width*.08,height*.94,-Math.PI/3);burst(width*.92,height*.94,-2*Math.PI/3)}
+        if(burstStep===1)burst(width*.5,height*.8,-Math.PI/2,68);
+        if(burstStep===2){burst(width*.25,height*.88,-Math.PI/2,38);burst(width*.75,height*.88,-Math.PI/2,38)}
+      }
+      ctx.clearRect(0,0,width,height);
+      particles=particles.filter(p=>p.life++<p.maxLife&&p.y<height+24);
+      particles.forEach(p=>{
+        p.vx*=p.drag;p.vy=p.vy*p.drag+p.gravity;p.x+=p.vx;p.y+=p.vy;p.rotation+=p.spin;
+        const opacity=Math.min(1,(p.maxLife-p.life)/24);
+        ctx.save();ctx.globalAlpha=opacity;ctx.fillStyle=p.color;ctx.translate(p.x,p.y);ctx.rotate(p.rotation);
+        if(p.shape==='circle'){ctx.beginPath();ctx.arc(0,0,p.size*.45,0,Math.PI*2);ctx.fill()}else ctx.fillRect(-p.size/2,-p.size*.32,p.size,p.size*.64);
+        ctx.restore();
+      });
+      if(elapsed<1800||particles.length)frame=requestAnimationFrame(draw);
+    };
+    resize();
+    const observer=new ResizeObserver(resize);observer.observe(canvas);
+    const replay=()=>fire();canvas.closest('.weekly-team').addEventListener('pointerenter',replay);
+    fire();
+    stopMissionConfetti=()=>{cancelAnimationFrame(frame);observer.disconnect();canvas.closest('.weekly-team')?.removeEventListener('pointerenter',replay);stopMissionConfetti=()=>{}};
   }
   function marketComparison(data){
     const g=data.teams.find(t=>t.team_key==='grand_city'), r=data.teams.find(t=>t.team_key==='riviera_city');
@@ -131,7 +182,7 @@
     return `<label class="theme-switch" title="Переключить тему"><input id="theme-toggle" type="checkbox" aria-label="Переключить светлую и тёмную тему"><span class="switch-bg"><span class="sky-vault"><span class="sun"></span><span class="moon"><span class="craters"><i class="crater crater-1"></i><i class="crater crater-2"></i><i class="crater crater-3"></i></span></span></span><span class="sky-clouds"><i class="cloud cloud-1"></i><i class="cloud cloud-2"></i></span><span class="sky-stars"><i class="star star-1"></i><i class="star star-2"></i><i class="star star-3"></i><i class="star star-4"></i></span><span class="landscape"><i class="mountain mountain-1"></i><i class="mountain mountain-2"></i><i class="terrain"></i><i class="tree tree-1"></i><i class="tree tree-2"></i><i class="tree tree-3"></i></span></span></label>`;
   }
   function render(data){
-    charts.splice(0).forEach(c=>c.dispose()); const [grand,riv]=[data.teams.find(t=>t.team_key==='grand_city'),data.teams.find(t=>t.team_key==='riviera_city')];
+    stopMissionConfetti();charts.splice(0).forEach(c=>c.dispose()); const [grand,riv]=[data.teams.find(t=>t.team_key==='grand_city'),data.teams.find(t=>t.team_key==='riviera_city')];
     app.innerHTML=`<div class="dashboard"><section class="hero"><article class="card hero-main hero-cinematic"><video class="hero-video" autoplay muted loop playsinline preload="auto" poster="./assets/battle-poster.png?v=1" aria-hidden="true"><source src="./assets/battle.mp4?v=1" type="video/mp4"></video><div class="hero-title"><h1>Sales Kombat <span>монополия</span></h1></div><div class="theme-control">${themeSwitch()}</div></article></section>
     ${weeklyMission(data.weekly_mission)}
     <section class="summary-grid"><article class="card metric"><div class="metric-label">Общий бюджет</div><div class="metric-value">${money(data.overall.total_mission)}</div><div class="metric-sub">миссии двух городов</div></article><article class="card metric"><div class="metric-label">Освоено</div><div class="metric-value">${money(data.overall.total_fact)}</div><div class="metric-sub">все оплаты команд</div></article><article class="card metric"><div class="metric-label">Общее выполнение</div><div class="metric-value">${data.overall.total_progress_percent.toFixed(1).replace('.',',')}%</div><div class="metric-sub">по совокупному бюджету</div></article><article class="card metric"><div class="metric-label">Лидер</div><div class="metric-value leader-value">${esc(data.overall.leader_label)}</div><div class="metric-sub">по проценту своей миссии</div></article></section>
@@ -146,6 +197,7 @@
     const applyTheme=theme=>{document.documentElement.dataset.theme=theme;themeToggle.checked=theme==='dark';document.querySelector('meta[name="theme-color"]').content=theme==='dark'?'#091522':'#f3f6fa';try{localStorage.setItem('monopoly-theme',theme)}catch(e){}};
     applyTheme(document.documentElement.dataset.theme||'dark');
     themeToggle.onchange=()=>{applyTheme(themeToggle.checked?'dark':'light');charts.splice(0).forEach(c=>c.dispose());drawProducts(data.product_distribution)};
+    startMissionConfetti();
     drawProducts(data.product_distribution);
   }
   function drawProducts(rows){
