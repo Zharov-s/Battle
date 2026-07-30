@@ -214,9 +214,9 @@ h1 span{font-family:inherit}
 .weekly-team{position:relative;isolation:isolate;overflow:hidden;padding:18px;border:1px solid var(--line);border-radius:var(--radius);background-color:var(--surface)}
 .weekly-team>:not(.mission-confetti){position:relative;z-index:1}
 .mission-confetti{position:absolute;inset:0;z-index:0;width:100%;height:100%;pointer-events:none}
-.weekly-team.riviera.is-complete{border-color:color-mix(in srgb,var(--riviera) 54%,var(--line));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--riviera) 18%,transparent)}
-.weekly-team.grand{background-image:linear-gradient(135deg,var(--grand-soft) 0%,var(--surface) 62%)}
-.weekly-team.riviera{background-image:linear-gradient(225deg,var(--riviera-soft) 0%,var(--surface) 62%)}
+.weekly-team.is-complete{border-color:color-mix(in srgb,var(--team-accent) 54%,var(--line));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--team-accent) 18%,transparent)}
+.weekly-team.grand{--team-accent:var(--grand);background-image:linear-gradient(135deg,var(--grand-soft) 0%,var(--surface) 62%)}
+.weekly-team.riviera{--team-accent:var(--riviera);background-image:linear-gradient(225deg,var(--riviera-soft) 0%,var(--surface) 62%)}
 .market-question,.market-vote{background-color:var(--surface);background-image:linear-gradient(90deg,var(--grand-soft) 0%,var(--surface) 34%,var(--surface) 66%,var(--riviera-soft) 100%)}
 .teams-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:stretch}
 .teams-grid .city-card{height:100%}
