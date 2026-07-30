@@ -3,7 +3,6 @@
   const initialLoaderMarkup = app.innerHTML;
   const cfg = window.MONOPOLY_CONFIG;
   const charts = [];
-  const CELEBRATION_STORAGE_KEY = 'sales-kombat-weekly-celebrations-v1';
   let stopMissionConfetti = () => {};
   const fmt = n => new Intl.NumberFormat('ru-RU').format(Math.round(Number(n)||0));
   const money = n => `${fmt(n)} ₽`;
@@ -107,29 +106,25 @@
   function gauge(t){return `<div class="gauge" style="--p:${Math.min(t.progress_percent,100)}"><div class="gauge-content"><div class="progress-number">${t.progress_percent.toFixed(1).replace('.',',')}%</div><div class="gauge-caption">выполнение миссии</div></div></div>`}
   function cityCard(t,cls){return `<article class="card city-card ${cls}"><div class="city-kicker">${esc(t.team_name)}</div><div class="city-title">${esc(t.city_name)}</div><div class="team-name">Каждая оплата приближает город к полной покупке отелей</div><div class="gauge-wrap">${gauge(t)}</div><div class="city-stats"><div class="stat"><span>Миссия</span><strong>${money(t.mission_amount)}</strong></div><div class="stat"><span>Факт</span><strong>${money(t.fact_amount)}</strong></div><div class="stat"><span>Остаток</span><strong>${money(t.remaining_amount)}</strong></div><div class="stat"><span>Оплаченных продаж</span><strong>${fmt(t.sales_count)}</strong></div></div>${t.overplan_amount?`<div class="overplan">Перевыполнение: ${money(t.overplan_amount)}</div>`:''}${cls==='riviera'?`<figure class="champion"><img src="./assets/champion-riviera.png?v=1" alt="Лидер продаж — Ривьера-Сити" loading="lazy" width="1672" height="941"></figure>`:''}</article>`}
   function weeklyMission(weekly){
+    const missionKey=missionCelebrationKey(weekly);
     const teamCard=t=>{
       const cls=t.team_key==='grand_city'?'grand':'riviera';
       const complete=t.remaining_amount===0;
       return `<article class="weekly-team ${cls}${complete?' is-complete':''}" data-team-key="${esc(t.team_key)}">${complete?'<canvas class="mission-confetti" aria-hidden="true"></canvas>':''}<div class="weekly-team-head"><span>${esc(t.team_name)}</span><small>Цель ${money(t.mission_amount)}</small></div><div class="weekly-remaining"><span>${complete?'Цель выполнена':'Осталось собрать'}</span><strong>${money(t.remaining_amount)}</strong></div><div class="weekly-track" role="progressbar" aria-label="Выполнение недельной миссии ${esc(t.team_name)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.min(Math.round(t.progress_percent),100)}"><i style="width:${Math.min(t.progress_percent,100)}%"></i></div><div class="weekly-fact">Собрано ${money(t.fact_amount)} · ${t.progress_percent.toFixed(1).replace('.',',')}%</div></article>`;
     };
-    return `<section class="card weekly"><div class="weekly-heading"><div><div class="eyebrow">Миссия на неделю</div><h2>Дожимаем до пятницы</h2></div><span>${dateRu(weekly.period_start)} — ${dateRu(weekly.period_end)}</span></div><div class="weekly-grid">${weekly.teams.map(teamCard).join('')}</div></section>`;
+    return `<section class="card weekly" data-mission-key="${esc(missionKey)}"><div class="weekly-heading"><div><div class="eyebrow">Миссия на неделю</div><h2>Дожимаем до пятницы</h2></div><span>${dateRu(weekly.period_start)} — ${dateRu(weekly.period_end)}</span></div><div class="weekly-grid">${weekly.teams.map(teamCard).join('')}</div></section>`;
   }
   function missionCelebrationKey(weekly){
     const goals=[...weekly.teams].sort((a,b)=>a.team_key.localeCompare(b.team_key)).map(t=>`${t.team_key}:${t.mission_amount}`).join('|');
     return `${weekly.period_start}:${weekly.period_end}|${goals}`;
   }
-  function readCelebrationState(){
-    try{const state=JSON.parse(localStorage.getItem(CELEBRATION_STORAGE_KEY)||'null');if(state&&typeof state.mission_key==='string'&&Array.isArray(state.teams))return state}catch(e){}
-    return {mission_key:'',teams:[]};
-  }
-  function saveCelebrationState(state){try{localStorage.setItem(CELEBRATION_STORAGE_KEY,JSON.stringify(state))}catch(e){}}
   function startConfettiOnCanvas(canvas){
     const ctx=canvas.getContext('2d');
     if(!ctx)return null;
     const card=canvas.closest('.weekly-team');
     const accent=getComputedStyle(card).getPropertyValue('--team-accent').trim()||'#4fc3b2';
     const colors=[accent,'#e5bd63','#69a8f7','#f4f7fa','#ff7b72'];
-    let width=0,height=0,frame=0,particles=[],started=0,burstStep=-1;
+    let width=0,height=0,frame=0,restartTimer=0,particles=[],started=0,burstStep=-1;
     let stopped=false;
     const resize=()=>{
       const rect=canvas.getBoundingClientRect();
@@ -145,7 +140,7 @@
         particles.push({x,y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,gravity:.105+Math.random()*.045,drag:.982,rotation:Math.random()*Math.PI,spin:(Math.random()-.5)*.24,size:4+Math.random()*5,life:0,maxLife:72+Math.random()*44,color:colors[i%colors.length],shape:Math.random()>.3?'rect':'circle'});
       }
     };
-    const fire=()=>{particles=[];started=performance.now();burstStep=-1;cancelAnimationFrame(frame);frame=requestAnimationFrame(draw)};
+    const fire=()=>{if(stopped)return;particles=[];started=performance.now();burstStep=-1;cancelAnimationFrame(frame);frame=requestAnimationFrame(draw)};
     const draw=now=>{
       const elapsed=now-started;
       const nextStep=Math.min(2,Math.floor(elapsed/520));
@@ -164,10 +159,10 @@
         if(p.shape==='circle'){ctx.beginPath();ctx.arc(0,0,p.size*.45,0,Math.PI*2);ctx.fill()}else ctx.fillRect(-p.size/2,-p.size*.32,p.size,p.size*.64);
         ctx.restore();
       });
-      if(elapsed<1800||particles.length)frame=requestAnimationFrame(draw);else cleanup();
+      if(elapsed<1800||particles.length)frame=requestAnimationFrame(draw);else restartTimer=setTimeout(fire,3600);
     };
     const observer=typeof ResizeObserver==='function'?new ResizeObserver(resize):{observe(){},disconnect(){}};
-    const cleanup=()=>{if(stopped)return;stopped=true;cancelAnimationFrame(frame);observer.disconnect();ctx.clearRect(0,0,width,height)};
+    const cleanup=()=>{if(stopped)return;stopped=true;cancelAnimationFrame(frame);clearTimeout(restartTimer);observer.disconnect();ctx.clearRect(0,0,width,height)};
     resize();
     observer.observe(canvas);
     fire();
@@ -175,20 +170,16 @@
   }
   function syncMissionCelebrations(weekly){
     stopMissionConfetti();
-    const missionKey=missionCelebrationKey(weekly);
-    let state=readCelebrationState();
-    if(state.mission_key!==missionKey){state={mission_key:missionKey,teams:[]};saveCelebrationState(state)}
+    const renderedMission=document.querySelector('.weekly')?.dataset.missionKey;
+    if(renderedMission!==missionCelebrationKey(weekly)){stopMissionConfetti=()=>{};return}
     const completed=weekly.teams.filter(t=>t.remaining_amount===0);
-    const pending=completed.filter(t=>!state.teams.includes(t.team_key));
-    if(!pending.length){stopMissionConfetti=()=>{};return}
+    if(!completed.length){stopMissionConfetti=()=>{};return}
     const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
     const cleanups=[];
-    pending.forEach(t=>{
+    completed.forEach(t=>{
       const canvas=document.querySelector(`.weekly-team[data-team-key="${t.team_key}"] .mission-confetti`);
       if(!reducedMotion&&canvas){const cleanup=startConfettiOnCanvas(canvas);if(cleanup)cleanups.push(cleanup)}
     });
-    state.teams=[...new Set([...state.teams,...pending.map(t=>t.team_key)])];
-    saveCelebrationState(state);
     stopMissionConfetti=()=>{cleanups.splice(0).forEach(cleanup=>cleanup());stopMissionConfetti=()=>{}};
   }
   function marketComparison(data){
