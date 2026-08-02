@@ -203,7 +203,6 @@
   function render(data){
     stopMissionConfetti();charts.splice(0).forEach(c=>c.dispose()); const [grand,riv]=[data.teams.find(t=>t.team_key==='grand_city'),data.teams.find(t=>t.team_key==='riviera_city')];
     app.innerHTML=`<div class="dashboard"><section class="hero"><article class="card hero-main hero-cinematic"><video class="hero-video" autoplay muted loop playsinline preload="auto" poster="./assets/battle-poster.png?v=1" aria-hidden="true"><source src="./assets/battle.mp4?v=1" type="video/mp4"></video><div class="hero-title"><h1>Sales Kombat <span>монополия</span></h1></div><div class="theme-control">${themeSwitch()}</div></article></section>
-    ${weeklyMission(data.weekly_mission)}
     <section class="summary-grid"><article class="card metric"><div class="metric-label">Общий бюджет</div><div class="metric-value">${money(data.overall.total_mission)}</div><div class="metric-sub">миссии двух городов</div></article><article class="card metric"><div class="metric-label">Освоено</div><div class="metric-value">${money(data.overall.total_fact)}</div><div class="metric-sub">все оплаты команд</div></article><article class="card metric"><div class="metric-label">Общее выполнение</div><div class="metric-value">${data.overall.total_progress_percent.toFixed(1).replace('.',',')}%</div><div class="metric-sub">по совокупному бюджету</div></article><article class="card metric"><div class="metric-label">Лидер</div><div class="metric-value leader-value">${esc(data.overall.leader_label)}</div><div class="metric-sub">по проценту своей миссии</div></article></section>
     ${marketComparison(data)}
     <section class="teams-grid">${cityCard(grand,'grand')}${cityCard(riv,'riviera')}</section>
@@ -216,7 +215,6 @@
     const applyTheme=theme=>{document.documentElement.dataset.theme=theme;themeToggle.checked=theme==='dark';document.querySelector('meta[name="theme-color"]').content=theme==='dark'?'#091522':'#f3f6fa';try{localStorage.setItem('monopoly-theme',theme)}catch(e){}};
     applyTheme(document.documentElement.dataset.theme||'dark');
     themeToggle.onchange=()=>{applyTheme(themeToggle.checked?'dark':'light');charts.splice(0).forEach(c=>c.dispose());drawProducts(data.product_distribution)};
-    syncMissionCelebrations(data.weekly_mission);
     drawProducts(data.product_distribution);
   }
   function drawProducts(rows){
