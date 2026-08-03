@@ -28,4 +28,9 @@ const sale = (date, amount = 100000) => ({ date, manager: 'Менеджер', am
   assert.equal(result.fact_amount, 150000, 'при наличии дат должен сохраняться фильтр недели');
 }
 
+{
+  const upsell = { date: '', manager: 'Менеджер', amount: 27999, product: 'услуги по установки АПИ' };
+  assert.equal(context.valid_(upsell, true), true, 'личный зачёт должен учитывать все модули без даты');
+}
+
 console.log('weekly mission tests passed');
