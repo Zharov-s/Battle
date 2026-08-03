@@ -225,12 +225,13 @@
     const el=document.getElementById('productsChart'); if(!window.echarts||!el){if(el)el.innerHTML='<div class="small">Диаграмма недоступна</div>';return}
     if(!rows.length){el.innerHTML='<div class="small">Пока нет данных о продажах по продуктам.</div>';return}
     const cs=getComputedStyle(document.documentElement);
-    const grand=cs.getPropertyValue('--grand').trim()||'#2f6fbd';
-    const riviera=cs.getPropertyValue('--riviera').trim()||'#168577';
-    const ink=cs.getPropertyValue('--ink').trim()||'#f4f7fb';
-    const muted=cs.getPropertyValue('--muted').trim()||'#91a6bf';
-    const line=cs.getPropertyValue('--line').trim()||'#203852';
-    const surface=cs.getPropertyValue('--surface').trim()||'#0b1b2e';
+    const panelCs=getComputedStyle(el.closest('.products-panel'));
+    const grand=panelCs.getPropertyValue('--chart-grand').trim()||cs.getPropertyValue('--grand').trim()||'#2f6fbd';
+    const riviera=panelCs.getPropertyValue('--chart-riviera').trim()||cs.getPropertyValue('--riviera').trim()||'#168577';
+    const ink=panelCs.getPropertyValue('--chart-ink').trim()||cs.getPropertyValue('--ink').trim()||'#f4f7fb';
+    const muted=panelCs.getPropertyValue('--chart-muted').trim()||cs.getPropertyValue('--muted').trim()||'#91a6bf';
+    const line=panelCs.getPropertyValue('--chart-line').trim()||cs.getPropertyValue('--line').trim()||'#203852';
+    const surface=panelCs.getPropertyValue('--chart-surface').trim()||cs.getPropertyValue('--surface').trim()||'#0b1b2e';
     const cats=rows.map(r=>r.product).reverse();
     const axisMoney=v=>v>=1e6?`${(v/1e6).toLocaleString('ru-RU',{maximumFractionDigits:1})} млн`:v>=1e3?`${Math.round(v/1e3)} тыс.`:`${v}`;
     const chart=echarts.init(el,null,{renderer:'svg'});charts.push(chart);

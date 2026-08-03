@@ -227,7 +227,10 @@ h1 span{font-family:inherit}
 .map-card .hotel-map{grid-template-columns:repeat(15,minmax(0,1fr))}
 .insights-grid{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(340px,.75fr);gap:16px;align-items:stretch}
 .insights-grid>.panel{height:100%}
-.products-panel{display:grid;grid-template-rows:auto 1fr}
+.products-panel{--chart-grand:#6c9ee8;--chart-riviera:#52c7b0;--chart-ink:#f4f1e8;--chart-muted:#b8c1cc;--chart-line:rgba(190,205,223,.22);--chart-surface:#172331;display:grid;grid-template-rows:auto 1fr;position:relative;isolation:isolate;overflow:hidden;color:var(--chart-ink);border-color:#304558;background-color:#101a25;background-image:radial-gradient(circle at 12% 14%,rgba(201,151,64,.22),transparent 26%),radial-gradient(circle at 88% 82%,rgba(57,108,134,.3),transparent 34%),linear-gradient(135deg,rgba(7,14,22,.98),rgba(23,38,52,.92))}
+.products-panel::before{content:"⚜";position:absolute;z-index:-1;right:-12px;bottom:-48px;color:rgba(217,168,74,.1);font-family:Georgia,serif;font-size:250px;line-height:1;transform:rotate(-13deg)}
+.products-panel .section-head h2{color:var(--chart-ink);text-shadow:0 2px 12px rgba(0,0,0,.45)}
+.products-panel .section-head .small{color:var(--chart-muted)}
 .products-panel .chart{min-height:340px;height:100%}
 .ranking-panel{display:flex;flex-direction:column}
 .ranking-panel .champion{margin-top:auto;padding-top:16px}
