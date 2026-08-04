@@ -190,7 +190,7 @@ h1 span{font-family:inherit}
 /* Full-bleed cinematic header and tighter dashboard geometry */
 :root{--radius:9px;--radius-sm:6px}
 .page-shell{width:100%;margin:0;padding:0 0 36px}
-.dashboard>:not(.hero){width:min(1540px,calc(100% - 32px));margin-inline:auto}
+.dashboard>:not(.hero):not(.dragon-flight){width:min(1540px,calc(100% - 32px));margin-inline:auto}
 .hero{width:100%;max-width:none;margin:0}
 .hero-main.hero-cinematic{width:100%;min-height:0;height:clamp(320px,33.333vw,620px);border:1px solid rgba(135,161,184,.32);border-radius:var(--radius);box-shadow:var(--shadow)}
 .period,.refresh-btn{border-radius:8px}
@@ -200,7 +200,7 @@ h1 span{font-family:inherit}
 .loading-screen{min-height:100vh}
 @media(max-width:700px){
   .dashboard{gap:12px}
-  .dashboard>:not(.hero){width:calc(100% - 18px)}
+  .dashboard>:not(.hero):not(.dragon-flight){width:calc(100% - 18px)}
   .hero-main.hero-cinematic{height:auto;min-height:0;aspect-ratio:900/474;padding:15px 12px}
   .hero-image{object-fit:cover;object-position:center}
   .hero-title{width:calc(100% - 62px);justify-self:start;text-align:left}
@@ -260,6 +260,14 @@ h1 span{font-family:inherit}
   .rules-panel .rule+.rule{border-left:0;border-top:1px solid var(--line)}
 }
 @media(prefers-reduced-motion:reduce){.mission-confetti{display:none}}
+
+/* A small flying dragon carries the fantasy theme across the dashboard. */
+.dragon-flight{position:fixed;z-index:20;top:136px;left:-170px;width:150px;pointer-events:none;will-change:transform;animation:dragon-cross 44s linear infinite}
+.dragon-flight img{display:block;width:100%;height:auto;filter:drop-shadow(0 8px 8px rgba(0,0,0,.34));transform-origin:62% 53%;animation:dragon-wingbeat 1.15s ease-in-out infinite alternate}
+@keyframes dragon-cross{0%{transform:translate3d(0,0,0) rotate(-3deg)}20%{transform:translate3d(25vw,-34px,0) rotate(2deg)}54%{transform:translate3d(58vw,18px,0) rotate(-1deg)}78%{transform:translate3d(83vw,-26px,0) rotate(3deg)}100%{transform:translate3d(calc(100vw + 300px),8px,0) rotate(-2deg)}}
+@keyframes dragon-wingbeat{from{transform:translateY(-2px) rotate(-2deg) scaleY(.96)}to{transform:translateY(3px) rotate(2deg) scaleY(1.03)}}
+@media(prefers-reduced-motion:reduce){.dragon-flight{display:none}}
+@media(max-width:700px){.dragon-flight{top:86px;width:96px;left:-112px}}
 
 /* Heraldic castles for the city-growth map */
 .hotel.partial{border-color:color-mix(in srgb,var(--accent) 42%,var(--line))}
