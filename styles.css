@@ -190,7 +190,7 @@ h1 span{font-family:inherit}
 /* Full-bleed cinematic header and tighter dashboard geometry */
 :root{--radius:9px;--radius-sm:6px}
 .page-shell{width:100%;margin:0;padding:0 0 36px}
-.dashboard>:not(.hero):not(.dragon-flight){width:min(1540px,calc(100% - 32px));margin-inline:auto}
+.dashboard>:not(.hero){width:min(1540px,calc(100% - 32px));margin-inline:auto}
 .hero{width:100%;max-width:none;margin:0}
 .hero-main.hero-cinematic{width:100%;min-height:0;height:clamp(320px,33.333vw,620px);border:1px solid rgba(135,161,184,.32);border-radius:var(--radius);box-shadow:var(--shadow)}
 .period,.refresh-btn{border-radius:8px}
@@ -200,7 +200,7 @@ h1 span{font-family:inherit}
 .loading-screen{min-height:100vh}
 @media(max-width:700px){
   .dashboard{gap:12px}
-  .dashboard>:not(.hero):not(.dragon-flight){width:calc(100% - 18px)}
+  .dashboard>:not(.hero){width:calc(100% - 18px)}
   .hero-main.hero-cinematic{height:auto;min-height:0;aspect-ratio:900/474;padding:15px 12px}
   .hero-image{object-fit:cover;object-position:center}
   .hero-title{width:calc(100% - 62px);justify-self:start;text-align:left}
@@ -261,13 +261,25 @@ h1 span{font-family:inherit}
 }
 @media(prefers-reduced-motion:reduce){.mission-confetti{display:none}}
 
-/* A small flying dragon carries the fantasy theme across the dashboard. */
-.dragon-flight{position:fixed;z-index:20;top:136px;left:-170px;width:150px;pointer-events:none;will-change:transform;animation:dragon-cross 44s linear infinite}
-.dragon-flight img{display:block;width:100%;height:auto;filter:drop-shadow(0 8px 8px rgba(0,0,0,.34));transform-origin:62% 53%;animation:dragon-wingbeat 1.15s ease-in-out infinite alternate}
-@keyframes dragon-cross{0%{transform:translate3d(0,0,0) rotate(-3deg)}20%{transform:translate3d(25vw,-34px,0) rotate(2deg)}54%{transform:translate3d(58vw,18px,0) rotate(-1deg)}78%{transform:translate3d(83vw,-26px,0) rotate(3deg)}100%{transform:translate3d(calc(100vw + 300px),8px,0) rotate(-2deg)}}
-@keyframes dragon-wingbeat{from{transform:translateY(-2px) rotate(-2deg) scaleY(.96)}to{transform:translateY(3px) rotate(2deg) scaleY(1.03)}}
-@media(prefers-reduced-motion:reduce){.dragon-flight{display:none}}
-@media(max-width:700px){.dragon-flight{top:86px;width:96px;left:-112px}}
+/* Noir casino palette: warm brass against burgundy velvet and green felt. */
+:root{--bg:#120b0c;--surface:#211416;--surface-2:#2c1b1e;--ink:#f6ead0;--muted:#c9b7a1;--line:#65433b;--grand:#c33f32;--grand-soft:#3a1719;--riviera:#2f8d6d;--riviera-soft:#143d35;--gold:#d7a847;--shadow:0 18px 46px rgba(0,0,0,.38)}
+body{background:radial-gradient(circle at 50% -10%,#3d151a 0%,var(--bg) 42%,#090607 100%)}
+.card{box-shadow:0 14px 36px rgba(0,0,0,.35)}
+.hero-main.hero-cinematic{border-color:rgba(215,168,71,.42);background:#150c0d}
+.hero-cinematic::after{background:linear-gradient(180deg,rgba(8,4,5,.68),rgba(8,4,5,.2) 48%,rgba(8,4,5,.64))}
+.hero-title h1 span{color:#e3c77e}
+.market,.map-card,.ranking-panel,.rules-panel{background:linear-gradient(145deg,#291719,#1b1012)}
+.market-head{border-bottom-color:rgba(215,168,71,.28)}
+.market-question,.market-vote{background-image:linear-gradient(90deg,#391517 0%,#211416 39%,#211416 61%,#123b32 100%)}
+.stat,.rank-row{background:#2b1a1d;border-color:#563931}
+.rank{background:#4a311c;color:#f4d88d}
+.overplan{background:#4a311c;color:#f4d88d}
+.gauge:after{background:var(--surface)}
+.hotel{background:#2b1a1d;border-color:#563931}
+.hotel:before{opacity:.72}
+.legend-dot{border-color:#7c5845}
+.products-panel{border-color:#795b32;background-color:#15100e;background-image:radial-gradient(circle at 14% 12%,rgba(196,51,50,.26),transparent 30%),radial-gradient(circle at 88% 82%,rgba(44,130,101,.28),transparent 34%),linear-gradient(135deg,#130e0d,#261612)}
+.products-panel .small{color:#dcc99f}
 
 /* Heraldic castles for the city-growth map */
 .hotel.partial{border-color:color-mix(in srgb,var(--accent) 42%,var(--line))}
