@@ -223,6 +223,7 @@ h1 span{font-family:inherit}
 .teams-grid .city-card.grand{background-image:linear-gradient(145deg,var(--grand-soft) 0%,var(--surface) 34%)}
 .teams-grid .city-card.riviera{background-image:linear-gradient(215deg,var(--riviera-soft) 0%,var(--surface) 34%)}
 .teams-grid .champion img{height:clamp(190px,18vw,280px);object-fit:cover;object-position:center 20%}
+.teams-grid .champion-riviera img{object-position:center 28%}
 .dashboard>.map-card{order:initial}
 .map-card .hotel-map{grid-template-columns:repeat(15,minmax(0,1fr))}
 .insights-grid{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(340px,.75fr);gap:16px;align-items:stretch}
