@@ -282,6 +282,28 @@ body{background:radial-gradient(circle at 50% -10%,#3d151a 0%,var(--bg) 42%,#090
 .products-panel{border-color:#795b32;background-color:#15100e;background-image:radial-gradient(circle at 14% 12%,rgba(196,51,50,.26),transparent 30%),radial-gradient(circle at 88% 82%,rgba(44,130,101,.28),transparent 34%),linear-gradient(135deg,#130e0d,#261612)}
 .products-panel .small{color:#dcc99f}
 
+/* Twilight Eclipse: moonlit indigo with restrained silver and violet glow. */
+:root{--bg:#070a18;--surface:#10142a;--surface-2:#191d39;--ink:#edf0ff;--muted:#aeb7d8;--line:#39426f;--grand:#b98cff;--grand-soft:#241b48;--riviera:#76c8e8;--riviera-soft:#102e46;--gold:#d8dcff;--shadow:0 20px 52px rgba(0,0,0,.52)}
+body{background:radial-gradient(circle at 50% -18%,#383269 0%,#111330 37%,#050714 100%)}
+.card{background:linear-gradient(145deg,rgba(27,31,59,.98),rgba(12,15,35,.98));border-color:rgba(159,177,235,.28);box-shadow:0 16px 40px rgba(0,0,0,.46)}
+.hero-main.hero-cinematic{background:#080b1b;border-color:rgba(202,210,255,.42)}
+.hero-cinematic::after{background:linear-gradient(180deg,rgba(4,6,18,.72),rgba(8,9,24,.12) 48%,rgba(5,7,20,.7))}
+.hero-title h1{color:#f5f6ff;text-shadow:0 3px 28px rgba(119,102,255,.42)}
+.hero-title h1 span{color:#cdd6ff}
+.market,.map-card,.ranking-panel,.rules-panel{background:linear-gradient(145deg,#191a37,#0d1128)}
+.market-head{border-bottom-color:rgba(182,197,255,.22)}
+.market-question,.market-vote{background-image:linear-gradient(90deg,#211845,#151936 42%,#151936 58%,#0f324c 100%)}
+.stat,.rank-row{background:rgba(24,29,57,.88);border-color:#3e4775}
+.rank{background:#2f2857;color:#eef0ff}
+.overplan{background:#2e2859;color:#e7eaff}
+.gauge:after{background:var(--surface)}
+.hotel{background:#181d39;border-color:#3e4775}
+.legend-dot{border-color:#6774a8}
+.products-panel{border-color:#4d538b;background-color:#0c1026;background-image:radial-gradient(circle at 14% 12%,rgba(136,101,236,.3),transparent 31%),radial-gradient(circle at 88% 82%,rgba(80,172,224,.24),transparent 34%),linear-gradient(135deg,#090c20,#151638)}
+.products-panel .small{color:#c5cef5}
+.teams-grid .city-card.grand{background-image:linear-gradient(145deg,#251b4d 0%,#10142a 42%)}
+.teams-grid .city-card.riviera{background-image:linear-gradient(215deg,#11344d 0%,#10142a 42%)}
+
 /* Heraldic castles for the city-growth map */
 .hotel.partial{border-color:color-mix(in srgb,var(--accent) 42%,var(--line))}
 .hotel-icon{display:grid;place-items:center}
