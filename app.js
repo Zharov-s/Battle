@@ -64,10 +64,11 @@
   }
   async function loadRaw(){
     if(cfg.API_URL) return jsonp(cfg.API_URL);
-    const riv=await gviz(cfg.SHEETS.riviera);
+    const ocean=await gviz(cfg.SHEETS.ocean);
+    const alpine=await gviz(cfg.SHEETS.alpine);
     const gra=await gviz(cfg.SHEETS.grand);
     const ups=await gviz(cfg.SHEETS.upsells);
-    return buildPayload(normalize(rowsFromGviz(riv)),normalize(rowsFromGviz(gra)),normalize(rowsFromGviz(ups)),missionFromGviz(riv),missionFromGviz(gra));
+    return buildPayload(normalize(rowsFromGviz(ocean)),normalize(rowsFromGviz(alpine)),normalize(rowsFromGviz(gra)),normalize(rowsFromGviz(ups)),missionFromGviz(ocean),missionFromGviz(alpine),missionFromGviz(gra));
   }
   function validSale(r,upsell=false,legacyNoDates=false){
     if(upsell) return r.manager.trim() && r.amount>0;
@@ -87,20 +88,27 @@
     const fact=(hasDates?valid.filter(r=>inWeeklyPeriod(parseDate(r.date))):valid).reduce((sum,r)=>sum+r.amount,0);
     return {team_key:key,team_name:name,mission_amount:goal,fact_amount:fact,remaining_amount:Math.max(goal-fact,0),progress_percent:goal?fact/goal*100:0};
   }
-  function buildPayload(rivRows,graRows,upRows,rivMission,graMission){
-    const legacyNoDates=!rivRows.concat(graRows,upRows).some(r=>String(r.date||'').trim());
-    const grandMission=graMission||2000000, rivM=rivMission||2500000;
-    const teams=[team('grand_city','Гранд-Сити','Команда Шкильнюка',grandMission,graRows,legacyNoDates),team('riviera_city','Ривьера-Сити','Команда Китаевой',rivM,rivRows,legacyNoDates)];
+  function buildPayload(oceanRows,alpineRows,grandRows,upRows,oceanMission,alpineMission,grandMission){
+    const legacyNoDates=!oceanRows.concat(alpineRows,grandRows,upRows).some(r=>String(r.date||'').trim());
+    const teams=[
+      team('ocean_resort','Ocean Resort','Команда Проскурякова',2000000,oceanRows,legacyNoDates),
+      team('alpine_resort','Alpine Resort','Команда Коняевой',800000,alpineRows,legacyNoDates),
+      team('grand_city','Grand City Hotel','Команда Шкильнюка',800000,grandRows,legacyNoDates)
+    ];
     const totalFact=teams.reduce((s,t)=>s+t.fact_amount,0), totalMission=teams.reduce((s,t)=>s+t.mission_amount,0);
     const leader=teams[0].progress_percent===teams[1].progress_percent?null:[...teams].sort((a,b)=>b.progress_percent-a.progress_percent)[0];
     const ranking={}; upRows.filter(r=>validSale(r,true,legacyNoDates)).forEach(r=>{ranking[r.manager]??={manager:r.manager,upsell_amount:0,upsell_count:0};ranking[r.manager].upsell_amount+=r.amount;ranking[r.manager].upsell_count++});
     const manager_top=Object.values(ranking).sort((a,b)=>b.upsell_amount-a.upsell_amount||a.manager.localeCompare(b.manager,'ru')).slice(0,5).map((r,i)=>({...r,rank:i+1}));
-    const products={}; [...graRows.filter(r=>validSale(r,false,legacyNoDates)).map(r=>({...r,key:'grand_city'})),...rivRows.filter(r=>validSale(r,false,legacyNoDates)).map(r=>({...r,key:'riviera_city'}))].forEach(r=>{const p=r.product||'Без продукта';products[p]??={product:p,amount_total:0,amount_grand_city:0,amount_riviera_city:0};products[p].amount_total+=r.amount;products[p]['amount_'+r.key]+=r.amount});
+    const products={}; [
+      ...oceanRows.filter(r=>validSale(r,false,legacyNoDates)).map(r=>({...r,key:'ocean_resort'})),
+      ...alpineRows.filter(r=>validSale(r,false,legacyNoDates)).map(r=>({...r,key:'alpine_resort'})),
+      ...grandRows.filter(r=>validSale(r,false,legacyNoDates)).map(r=>({...r,key:'grand_city'}))
+    ].forEach(r=>{const p=r.product||'Без продукта';products[p]??={product:p,amount_total:0,amount_ocean_resort:0,amount_alpine_resort:0,amount_grand_city:0};products[p].amount_total+=r.amount;products[p]['amount_'+r.key]+=r.amount});
     const product_distribution=Object.values(products).sort((a,b)=>b.amount_total-a.amount_total).map(p=>({...p,share_percent:totalFact?p.amount_total/totalFact*100:0}));
-    const all=[...rivRows,...graRows]; const errors=all.filter(r=>r.manager||r.amount||r.product||r.date).filter(r=>!validSale(r,false,legacyNoDates)).length + upRows.filter(r=>r.manager||r.amount||r.product||r.date).filter(r=>!validSale(r,true,legacyNoDates)).length;
-    const weeklyRowMode=[graRows,rivRows].some(rows=>rows.some(r=>r.manager.trim()&&r.amount>0)&&!rows.some(r=>parseDate(r.date)));
-    const warnings=[]; if(weeklyRowMode) warnings.push('В командных листах нет дат: недельный факт считается со строки 20 для Шкильнюка и со строки 36 для Китаевой.');
-    return {meta:{game_title:'Сумерки. Затмение',subtitle:'Финальная неделя игры для команд подключений',period_start:cfg.PERIOD_START,period_end:cfg.PERIOD_END,hotel_price:cfg.HOTEL_PRICE,generated_at:new Date().toISOString()},weekly_mission:{period_start:cfg.WEEKLY_START,period_end:cfg.WEEKLY_END,teams:[weeklyTeam('grand_city','Команда Шкильнюка',graRows),weeklyTeam('riviera_city','Команда Китаевой',rivRows)]},teams,overall:{total_mission:totalMission,total_fact:totalFact,total_progress_percent:totalFact/totalMission*100,total_remaining:Math.max(totalMission-totalFact,0),leader_team_key:leader?.team_key||null,leader_label:leader?.city_name||'Равенство'},manager_top,product_distribution,data_quality:{status:(errors||legacyNoDates||weeklyRowMode)?'warning':'ok',error_count:errors,warnings:warnings.concat(errors?[`Строк вне периода или с незаполненными обязательными полями: ${errors}`]:[])}};
+    const all=[...oceanRows,...alpineRows,...grandRows]; const errors=all.filter(r=>r.manager||r.amount||r.product||r.date).filter(r=>!validSale(r,false,legacyNoDates)).length + upRows.filter(r=>r.manager||r.amount||r.product||r.date).filter(r=>!validSale(r,true,legacyNoDates)).length;
+    const weeklyRowMode=[oceanRows,alpineRows,grandRows].some(rows=>rows.some(r=>r.manager.trim()&&r.amount>0)&&!rows.some(r=>parseDate(r.date)));
+    const warnings=[]; if(weeklyRowMode) warnings.push('В части командных листов нет дат: недельный факт считается по всем корректным строкам.');
+    return {meta:{game_title:'Гонка отелей',subtitle:'Оплаты превращаются в монеты, а монеты — в новые отели',period_start:cfg.PERIOD_START,period_end:cfg.PERIOD_END,hotel_price:cfg.HOTEL_PRICE,generated_at:new Date().toISOString()},weekly_mission:{period_start:cfg.WEEKLY_START,period_end:cfg.WEEKLY_END,teams:[weeklyTeam('ocean_resort','Команда Проскурякова',oceanRows),weeklyTeam('alpine_resort','Команда Коняевой',alpineRows),weeklyTeam('grand_city','Команда Шкильнюка',grandRows)]},teams,overall:{total_mission:totalMission,total_fact:totalFact,total_progress_percent:totalFact/totalMission*100,total_remaining:Math.max(totalMission-totalFact,0),leader_team_key:leader?.team_key||null,leader_label:leader?.city_name||'Равенство'},manager_top,product_distribution,data_quality:{status:(errors||legacyNoDates||weeklyRowMode)?'warning':'ok',error_count:errors,warnings:warnings.concat(errors?[`Строк вне периода или с незаполненными обязательными полями: ${errors}`]:[])}};
   }
   const dateRu=s=>new Intl.DateTimeFormat('ru-RU',{day:'numeric',month:'long',year:'numeric'}).format(new Date(s+'T12:00:00+03:00'));
   function gauge(t){return `<div class="gauge" style="--p:${Math.min(t.progress_percent,100)}"><div class="gauge-content"><div class="progress-number">${t.progress_percent.toFixed(1).replace('.',',')}%</div><div class="gauge-caption">выполнение миссии</div></div></div>`}
@@ -250,6 +258,28 @@
       animationDuration:650,animationEasing:'cubicOut'
     });
     window.addEventListener('resize',()=>chart.resize(),{once:true});
+  }
+  const hotelThemes={
+    ocean_resort:{type:'ocean',emoji:'🌴',label:'Морской курорт',accent:'#3fc7d5',features:['Пляж','Бассейн','Яхт-клуб','SPA']},
+    alpine_resort:{type:'alpine',emoji:'🏔️',label:'Горный курорт',accent:'#98b8ff',features:['Шале','Канатная дорога','Ски-бар','Термальная зона']},
+    grand_city:{type:'city',emoji:'🏙️',label:'Городской бизнес-отель',accent:'#e9b85e',features:['Лобби','Панорамный ресторан','Конференц-зал','VIP-корпус']}
+  };
+  const hotelLevel=t=>Math.min(6,Math.floor(Math.min(t.progress_percent,100)/20)+1);
+  function hotelRaceCard(t){
+    const theme=hotelThemes[t.team_key]||hotelThemes.grand_city;
+    const level=hotelLevel(t), stage=['Старт','Фундамент','Открытие','Развитие','Премиум','Отель мечты'][level-1];
+    const next=Math.min(level*20,100), built=theme.features.slice(0,Math.max(0,level-1)), coins=Math.floor(t.fact_amount/1000);
+    return `<article class="hotel-race-card ${theme.type}" style="--team-accent:${theme.accent}"><div class="hotel-race-card__head"><div><span class="team-badge">${theme.emoji} ${theme.label}</span><h2>${esc(t.city_name)}</h2><p>${esc(t.team_name)}</p></div><span class="level-pill">Уровень ${level}/6 · ${stage}</span></div><div class="hotel-scene" aria-label="${esc(t.city_name)}, уровень ${level}"><div class="terrain"></div><div class="hotel-building level-${level}"><i></i><b></b><em></em></div><div class="scene-details">${built.map(x=>`<span>${x}</span>`).join('')||'<span>Площадка готова к стройке</span>'}</div><div class="coin-flight" aria-hidden="true"><i>●</i><i>●</i><i>●</i></div></div><div class="hotel-race-metrics"><div><span>Собрано</span><strong>${money(t.fact_amount)}</strong></div><div><span>Монеты</span><strong>${fmt(coins)} 🪙</strong></div><div><span>Оплаты</span><strong>${fmt(t.sales_count)}</strong></div></div><div class="hotel-progress"><div><span>До следующего уровня</span><strong>${t.progress_percent>=100?'Открыт VIP-корпус':`${Math.max(next-t.progress_percent,0).toFixed(1).replace('.',',')}%`}</strong></div><i><b style="width:${Math.min(t.progress_percent,100)}%"></b></i><small>${t.progress_percent.toFixed(1).replace('.',',')}% от плана ${money(t.mission_amount)}</small></div></article>`;
+  }
+  function rankingCard(data){
+    const byCount=[...data.manager_top].sort((a,b)=>b.upsell_count-a.upsell_count||b.upsell_amount-a.upsell_amount).slice(0,3), medals=['🥇','🥈','🥉'];
+    const list=(rows,kind)=>rows.map((r,i)=>`<div class="tycoon-row"><span>${medals[i]}</span><div><strong>${esc(r.manager)}</strong><small>${kind==='money'?`${money(r.upsell_amount)} · ${r.upsell_count} оплат`:`${r.upsell_count} оплат · ${money(r.upsell_amount)}`}</small></div></div>`).join('')||'<p class="small">Пока нет данных</p>';
+    return `<section class="card tycoon-ranking"><header class="section-head"><div><div class="eyebrow">Звёзды месяца</div><h2>Личный рейтинг</h2></div><span class="small">ТОП‑3 менеджера</span></header><div class="rank-columns"><div><h3>Золотой менеджер</h3>${list(data.manager_top.slice(0,3),'money')}</div><div><h3>Мастер заселения</h3>${list(byCount,'count')}</div></div></section>`;
+  }
+  function render(data){
+    charts.splice(0).forEach(c=>c.dispose());
+    const leader=data.teams.reduce((best,t)=>!best||t.progress_percent>best.progress_percent?t:best,null);
+    app.innerHTML=`<div class="dashboard hotel-race-dashboard"><section class="hero"><article class="card hero-main hero-cinematic hotel-race-hero"><img class="hero-image" src="./assets/hotel-race-hero.png?v=1" alt="Три территории Гонки отелей"><div class="hero-title"><div class="hero-kicker">Командная игра по продажам</div><h1>Гонка отелей<span>Оплата → монеты → стройка → отель</span></h1></div></article></section><section class="race-intro"><div><span class="eyebrow">Месяц строительства</span><h2>Каждая оплата строит ваш отель</h2><p>1 000 ₽ оплаты = 1 монета в личную и командную копилку. Развивайте отель, открывайте новые зоны и обгоняйте соперников по проценту выполнения плана.</p></div><div class="race-cycle"><span>Оплата</span><i>→</i><span>🪙 Монеты</span><i>→</i><span>🏨 Стройка</span><i>→</i><span>Отель мечты</span></div></section><section class="summary-grid race-summary"><article class="card metric"><div class="metric-label">Общий план</div><div class="metric-value">${money(data.overall.total_mission)}</div><div class="metric-sub">три отеля в гонке</div></article><article class="card metric"><div class="metric-label">Командные монеты</div><div class="metric-value">${fmt(Math.floor(data.overall.total_fact/1000))} 🪙</div><div class="metric-sub">1 000 ₽ = 1 монета</div></article><article class="card metric"><div class="metric-label">Среднее развитие</div><div class="metric-value">${data.overall.total_progress_percent.toFixed(1).replace('.',',')}%</div><div class="metric-sub">по совокупному плану</div></article><article class="card metric"><div class="metric-label">Лидер гонки</div><div class="metric-value leader-value">${esc(leader?.city_name||'—')}</div><div class="metric-sub">${leader?`уровень ${hotelLevel(leader)}/6`:''}</div></article></section><section class="hotel-race-grid">${data.teams.map(hotelRaceCard).join('')}</section>${rankingCard(data)}<section class="card game-rules"><header class="section-head"><div><div class="eyebrow">Игровая механика</div><h2>Как победить в гонке</h2></div></header><div class="rules"><div class="rule"><div class="rule-icon">🪙</div><div><strong>Зарабатывайте монеты</strong><p>Каждая 1 000 ₽ оплаты превращается в 1 монету для команды.</p></div></div><div class="rule"><div class="rule-icon">⚡</div><div><strong>Ускоряйте стройку</strong><p>Быстрые оплаты и новые клиенты дают бонусы к копилке.</p></div></div><div class="rule"><div class="rule-icon">🏗️</div><div><strong>Открывайте уровни</strong><p>На 20%, 40%, 60%, 80% и 100% отель получает заметные улучшения.</p></div></div><div class="rule"><div class="rule-icon">🏆</div><div><strong>Заберите титулы</strong><p>Побеждают лучший отель, самый быстрый строитель и два личных лидера.</p></div></div></div></section><section class="card quality ${data.data_quality.status==='ok'?'ok':'warn'}"><span class="q-icon">${data.data_quality.status==='ok'?'✓':'!'}</span><div class="q-text"><strong>${data.data_quality.status==='ok'?'Контроль данных: ошибок не найдено':'Контроль данных: нужна проверка'}</strong><span>${data.data_quality.warnings?.length?esc(data.data_quality.warnings.join(' • ')):'Все оплаты учтены в командных копилках.'}</span></div></section></div>`;
   }
   async function load(){
     const showLoader=!app.querySelector('.dashboard');

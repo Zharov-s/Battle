@@ -7,17 +7,20 @@ window.MONOPOLY_CONFIG = {
   WEEKLY_START: '2026-07-27',
   WEEKLY_END: '2026-07-31',
   WEEKLY_MISSIONS: {
+    ocean_resort: 500000,
+    alpine_resort: 200000,
     grand_city: 400000,
-    riviera_city: 500000
   },
   WEEKLY_START_ROWS: {
+    ocean_resort: 2,
+    alpine_resort: 2,
     grand_city: 20,
-    riviera_city: 36
   },
   HOTEL_PRICE: 100000,
   TIMEZONE: 'Europe/Moscow',
   SHEETS: {
-    riviera: 'Китаева',
+    ocean: 'Проскуряков',
+    alpine: 'Коняева',
     grand: 'Шкильнюк',
     upsells: 'Допродажи'
   }
