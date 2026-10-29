@@ -297,7 +297,7 @@
     const hotelField=document.querySelector('.hotel-field');
     hotelField.querySelector('.hotel-field-head h2').textContent='Общий кемпинг: гонка трёх отелей';
     hotelField.querySelector('.hotel-field-head p').textContent='Одна карта, три отеля: каждые 10 монет добавляют апгрейд. Смотрите, кто строится быстрее.';
-    hotelField.querySelector('.hotel-race-grid').replaceWith(sharedHotelField(data.teams));
+    hotelField.querySelector('.hotel-race-grid').outerHTML=sharedHotelField(data.teams);
   }
   async function load(){
     const showLoader=!app.querySelector('.dashboard');
