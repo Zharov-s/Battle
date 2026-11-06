@@ -88,6 +88,17 @@
     const fact=(hasDates?valid.filter(r=>inWeeklyPeriod(parseDate(r.date))):valid).reduce((sum,r)=>sum+r.amount,0);
     return {team_key:key,team_name:name,mission_amount:goal,fact_amount:fact,remaining_amount:Math.max(goal-fact,0),progress_percent:goal?fact/goal*100:0};
   }
+  function teamManagerTop(key,name,rows,legacyNoDates){
+    const ranking={};
+    rows.filter(r=>validSale(r,false,legacyNoDates)).forEach(r=>{
+      const manager=r.manager.trim();
+      ranking[manager]??={manager,amount:0,count:0};
+      ranking[manager].amount+=r.amount;
+      ranking[manager].count++;
+    });
+    const managers=Object.values(ranking).sort((a,b)=>b.amount-a.amount||b.count-a.count||a.manager.localeCompare(b.manager,'ru')).slice(0,3).map((r,i)=>({...r,rank:i+1}));
+    return {team_key:key,team_name:name,managers};
+  }
   function buildPayload(oceanRows,alpineRows,grandRows,upRows,oceanMission,alpineMission,grandMission){
     const legacyNoDates=!oceanRows.concat(alpineRows,grandRows,upRows).some(r=>String(r.date||'').trim());
     const teams=[
@@ -99,6 +110,7 @@
     const leader=teams[0].progress_percent===teams[1].progress_percent?null:[...teams].sort((a,b)=>b.progress_percent-a.progress_percent)[0];
     const ranking={}; upRows.filter(r=>validSale(r,true,legacyNoDates)).forEach(r=>{ranking[r.manager]??={manager:r.manager,upsell_amount:0,upsell_count:0};ranking[r.manager].upsell_amount+=r.amount;ranking[r.manager].upsell_count++});
     const manager_top=Object.values(ranking).sort((a,b)=>b.upsell_amount-a.upsell_amount||a.manager.localeCompare(b.manager,'ru')).slice(0,5).map((r,i)=>({...r,rank:i+1}));
+    const team_manager_top=[teamManagerTop('ocean_resort','Команда Проскурякова',oceanRows,legacyNoDates),teamManagerTop('alpine_resort','Команда Коняевой',alpineRows,legacyNoDates),teamManagerTop('grand_city','Команда Шкильнюка',grandRows,legacyNoDates)];
     const products={}; [
       ...oceanRows.filter(r=>validSale(r,false,legacyNoDates)).map(r=>({...r,key:'ocean_resort'})),
       ...alpineRows.filter(r=>validSale(r,false,legacyNoDates)).map(r=>({...r,key:'alpine_resort'})),
@@ -108,7 +120,7 @@
     const all=[...oceanRows,...alpineRows,...grandRows]; const errors=all.filter(r=>r.manager||r.amount||r.product||r.date).filter(r=>!validSale(r,false,legacyNoDates)).length + upRows.filter(r=>r.manager||r.amount||r.product||r.date).filter(r=>!validSale(r,true,legacyNoDates)).length;
     const weeklyRowMode=[oceanRows,alpineRows,grandRows].some(rows=>rows.some(r=>r.manager.trim()&&r.amount>0)&&!rows.some(r=>parseDate(r.date)));
     const warnings=[]; if(weeklyRowMode) warnings.push('В части командных листов нет дат: недельный факт считается по всем корректным строкам.');
-    return {meta:{game_title:'Гонка отелей',subtitle:'Оплаты превращаются в монеты, а монеты — в новые отели',period_start:cfg.PERIOD_START,period_end:cfg.PERIOD_END,hotel_price:cfg.HOTEL_PRICE,generated_at:new Date().toISOString()},weekly_mission:{period_start:cfg.WEEKLY_START,period_end:cfg.WEEKLY_END,teams:[weeklyTeam('ocean_resort','Команда Проскурякова',oceanRows),weeklyTeam('alpine_resort','Команда Коняевой',alpineRows),weeklyTeam('grand_city','Команда Шкильнюка',grandRows)]},teams,overall:{total_mission:totalMission,total_fact:totalFact,total_progress_percent:totalFact/totalMission*100,total_remaining:Math.max(totalMission-totalFact,0),leader_team_key:leader?.team_key||null,leader_label:leader?.city_name||'Равенство'},manager_top,product_distribution,data_quality:{status:(errors||legacyNoDates||weeklyRowMode)?'warning':'ok',error_count:errors,warnings:warnings.concat(errors?[`Строк вне периода или с незаполненными обязательными полями: ${errors}`]:[])}};
+    return {meta:{game_title:'Гонка отелей',subtitle:'Оплаты превращаются в монеты, а монеты — в новые отели',period_start:cfg.PERIOD_START,period_end:cfg.PERIOD_END,hotel_price:cfg.HOTEL_PRICE,generated_at:new Date().toISOString()},weekly_mission:{period_start:cfg.WEEKLY_START,period_end:cfg.WEEKLY_END,teams:[weeklyTeam('ocean_resort','Команда Проскурякова',oceanRows),weeklyTeam('alpine_resort','Команда Коняевой',alpineRows),weeklyTeam('grand_city','Команда Шкильнюка',grandRows)]},teams,overall:{total_mission:totalMission,total_fact:totalFact,total_progress_percent:totalFact/totalMission*100,total_remaining:Math.max(totalMission-totalFact,0),leader_team_key:leader?.team_key||null,leader_label:leader?.city_name||'Равенство'},manager_top,team_manager_top,product_distribution,data_quality:{status:(errors||legacyNoDates||weeklyRowMode)?'warning':'ok',error_count:errors,warnings:warnings.concat(errors?[`Строк вне периода или с незаполненными обязательными полями: ${errors}`]:[])}};
   }
   const dateRu=s=>new Intl.DateTimeFormat('ru-RU',{day:'numeric',month:'long',year:'numeric'}).format(new Date(s+'T12:00:00+03:00'));
   function gauge(t){return `<div class="gauge" style="--p:${Math.min(t.progress_percent,100)}"><div class="gauge-content"><div class="progress-number">${t.progress_percent.toFixed(1).replace('.',',')}%</div><div class="gauge-caption">выполнение миссии</div></div></div>`}
@@ -295,8 +307,9 @@
   }
   function rankingCard(data){
     const medals=['🥇','🥈','🥉'];
-    const list=data.manager_top.slice(0,3).map((r,i)=>`<div class="tycoon-row"><span>${medals[i]}</span><div><strong>${esc(r.manager)}</strong><small>${money(r.upsell_amount)} · ${r.upsell_count} оплат</small></div><em>🙂 Лайк от гостя</em></div>`).join('')||'<p class="small">Пока нет данных</p>';
-    return `<section class="card tycoon-ranking"><header class="section-head"><div><div class="eyebrow">Звёзды месяца</div><h2>Доска почёта</h2></div><span class="small">ТОП‑3 по сумме оплат</span></header><div class="rank-columns"><div><h3>🏆 Золотой менеджер</h3>${list}</div></div></section>`;
+    const order=['alpine_resort','ocean_resort','grand_city'];
+    const groups=order.map(key=>(data.team_manager_top||[]).find(group=>group.team_key===key)).filter(Boolean);
+    return `<section class="card tycoon-ranking"><header class="section-head"><div><div class="eyebrow">Звёзды месяца</div><h2>Доска почёта</h2></div><span class="small">ТОП‑3 МПП каждой команды по сумме оплат</span></header><div class="rank-columns">${groups.map(group=>{const zone=hotelZones[group.team_key]||hotelZones.grand_city;const list=group.managers.map((r,i)=>`<div class="tycoon-row"><span>${medals[i]}</span><div><strong>${esc(r.manager)}</strong><small>${money(r.amount)} · ${r.count} оплат</small></div><em>🙂 Лайк от гостя</em></div>`).join('')||'<p class="small">Пока нет оплат</p>';return `<div class="team-honor" style="--honor-accent:${zone.accent}"><h3>${zone.icon} ${esc(group.team_name)}</h3>${list}</div>`}).join('')}</div></section>`;
   }
   function teamResults(teams){
     const order=['alpine_resort','ocean_resort','grand_city'];
