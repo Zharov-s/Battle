@@ -91,8 +91,8 @@
   function buildPayload(oceanRows,alpineRows,grandRows,upRows,oceanMission,alpineMission,grandMission){
     const legacyNoDates=!oceanRows.concat(alpineRows,grandRows,upRows).some(r=>String(r.date||'').trim());
     const teams=[
-      team('ocean_resort','Ocean Resort','Команда Проскурякова',2000000,oceanRows,legacyNoDates),
-      team('alpine_resort','Alpine Resort','Команда Коняевой',800000,alpineRows,legacyNoDates),
+      team('ocean_resort','Ocean Resort','Команда Проскурякова',1900000,oceanRows,legacyNoDates),
+      team('alpine_resort','Alpine Resort','Команда Коняевой',600000,alpineRows,legacyNoDates),
       team('grand_city','Grand City Hotel','Команда Шкильнюка',800000,grandRows,legacyNoDates)
     ];
     const totalFact=teams.reduce((s,t)=>s+t.fact_amount,0), totalMission=teams.reduce((s,t)=>s+t.mission_amount,0);
