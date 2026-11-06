@@ -1,0 +1,70 @@
+/* Keep the illustrated hotel fully visible; progress controls live below it. */
+.hotel-zones-board{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  align-items:stretch;
+  gap:18px;
+  min-height:0;
+  padding:calc(56.28% + 30px) 22px 24px;
+  background:linear-gradient(180deg,#f7dca9 0 55%,#131a35 55% 100%);
+}
+
+.hotel-zones-board>img{
+  right:auto;
+  bottom:auto;
+  width:100%;
+  height:auto;
+  aspect-ratio:1672/941;
+  object-fit:contain;
+  object-position:center top;
+}
+
+.hotel-zones-board::after{
+  bottom:auto;
+  height:56.28%;
+  background:linear-gradient(180deg,rgba(28,15,5,.03),transparent 78%,rgba(17,21,43,.2));
+}
+
+.hotel-zones-board__caption{top:20px}
+
+.hotel-zone,
+.hotel-zone.reception,
+.hotel-zone.restaurant,
+.hotel-zone.rooms{
+  position:relative;
+  inset:auto;
+  width:auto;
+  min-width:0;
+  padding:18px;
+}
+
+.hotel-zone>strong{font-size:16px}
+.hotel-zone>small{min-height:28px;font-size:11px;line-height:1.3}
+.zone-upgrade-title{margin-top:15px;font-size:10px}
+.zone-upgrade-title strong{font-size:12px}
+.zone-upgrade-map{
+  grid-template-columns:repeat(9,minmax(17px,1fr));
+  gap:6px;
+  min-height:0;
+  margin-bottom:14px;
+}
+.zone-upgrade-map i{width:100%;height:auto;aspect-ratio:1;border-radius:5px}
+.zone-upgrade-map i b{font-size:7px}
+.hotel-zone footer span,.hotel-zone footer em{font-size:11px}
+.hotel-zone footer small{font-size:10px}
+
+@media(max-width:1050px){
+  .hotel-zones-board{grid-template-columns:1fr;padding:calc(56.28% + 24px) 18px 20px}
+  .hotel-zone,.hotel-zone.reception,.hotel-zone.restaurant,.hotel-zone.rooms{width:100%;padding:18px}
+  .hotel-zone>small{min-height:0}
+  .zone-upgrade-map{grid-template-columns:repeat(14,minmax(18px,1fr))}
+}
+
+@media(max-width:620px){
+  .hotel-zones-board{min-height:0;padding:calc(56.28% + 18px) 12px 14px;border-radius:17px}
+  .hotel-zones-board__caption{top:10px;padding:7px 10px}
+  .hotel-zones-board__caption b{font-size:11px}
+  .hotel-zones-board__caption span{font-size:8px}
+  .hotel-zone,.hotel-zone.reception,.hotel-zone.restaurant,.hotel-zone.rooms{width:100%;padding:14px}
+  .zone-upgrade-map{grid-template-columns:repeat(9,minmax(16px,1fr));gap:5px}
+}
