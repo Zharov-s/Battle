@@ -146,16 +146,16 @@ h1 span{font-family:inherit}
   --animation-duration: 2.1s;
   --cube-color: #0000;
   --highlight-color: #00cc44;
-  --cube-width: 48px;
-  --cube-height: 48px;
+  --cube-width: clamp(29px, 7.8vw, 48px);
+  --cube-height: clamp(29px, 7.8vw, 48px);
   --font-size: 1.8em;
   position: relative;
   inset: 0;
   display: grid;
-  grid-template-columns: repeat(7, var(--cube-width));
+  grid-template-columns: repeat(5, var(--cube-width)) 18px repeat(5, var(--cube-width));
   grid-template-rows: auto;
   grid-gap: 0;
-  width: calc(7 * var(--cube-width));
+  width: calc(10 * var(--cube-width) + 18px);
   height: var(--cube-height);
   perspective: 350px;
   font-family: "Poppins", sans-serif;
@@ -172,13 +172,17 @@ h1 span{font-family:inherit}
 .face-right {transform:rotateY(90deg) translateZ(calc(var(--cube-width) / 2));opacity:.6}
 .face-top {height:var(--cube-width);transform:rotateX(90deg) translateZ(calc(var(--cube-width) / 2));opacity:.8}
 .face-bottom {height:var(--cube-width);transform:rotateX(-90deg) translateZ(calc(var(--cube-height) - var(--cube-width) * .5));opacity:.8}
+.loader-gap{width:18px;height:var(--cube-height)}
 .cube:nth-child(1) {z-index:0;animation-delay:0s}
-.cube:nth-child(2) {z-index:1;animation-delay:.2s}
-.cube:nth-child(3) {z-index:2;animation-delay:.4s}
-.cube:nth-child(4) {z-index:3;animation-delay:.6s}
-.cube:nth-child(5) {z-index:2;animation-delay:.8s}
-.cube:nth-child(6) {z-index:1;animation-delay:1s}
-.cube:nth-child(7) {z-index:0;animation-delay:1.2s}
+.cube:nth-child(2) {z-index:1;animation-delay:.15s}
+.cube:nth-child(3) {z-index:2;animation-delay:.3s}
+.cube:nth-child(4) {z-index:3;animation-delay:.45s}
+.cube:nth-child(5) {z-index:2;animation-delay:.6s}
+.cube:nth-child(7) {z-index:2;animation-delay:.8s}
+.cube:nth-child(8) {z-index:3;animation-delay:.95s}
+.cube:nth-child(9) {z-index:2;animation-delay:1.1s}
+.cube:nth-child(10) {z-index:1;animation-delay:1.25s}
+.cube:nth-child(11) {z-index:0;animation-delay:1.4s}
 .cube {animation:translate-z var(--animation-duration) ease-in-out infinite}
 .cube .face {animation:face-color var(--animation-duration) ease-in-out infinite,edge-glow var(--animation-duration) ease-in-out infinite;animation-delay:inherit}
 .cube .face.face-front {animation:face-color var(--animation-duration) ease-in-out infinite,face-glow var(--animation-duration) ease-in-out infinite,edge-glow var(--animation-duration) ease-in-out infinite;animation-delay:inherit}
