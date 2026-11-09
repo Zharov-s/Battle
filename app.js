@@ -43,7 +43,8 @@
   }
   function rowsFromGviz(r){
     if(r.status!=='ok') throw new Error(r.errors?.[0]?.detailed_message||'Ошибка Google Sheets');
-    const cols=r.table.cols.map(c=>c.label||c.id);return r.table.rows.map(row=>Object.fromEntries(cols.map((c,i)=>[c,row.c[i]?.v??''])));
+    const cols=r.table.cols.map(c=>String(c.label||c.id||'').replace(/\u00a0/g,' ').replace(/\s+/g,' ').trim());
+    return r.table.rows.map(row=>Object.fromEntries(cols.map((c,i)=>[c,row.c[i]?.v??''])));
   }
   function normalize(rows){
     return rows.map(r=>({date:r['Дата оплаты']||r['Дата']||'',manager:r['ФИО МПП']||'',amount:num(r['Сумма продажи']),product:r['Продукт продажи']||''}));
