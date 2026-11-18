@@ -300,14 +300,67 @@
   }
   const ZONE_UPGRADE_PRICE=30000;
   const teamCoins=team=>Math.floor(team.fact_amount/ZONE_UPGRADE_PRICE);
-  const buildZonePath=(chapters,parts,max)=>Array.from({length:max},(_,i)=>{
-    const chapter=chapters[Math.min(Math.floor(i/parts.length),chapters.length-1)];
-    return `${chapter}: ${parts[i%parts.length]}`;
-  });
+  // Each chapter adds a piece of the interior, then upgrades its details in place.
+  const zoneParts={
+    base:'основа',
+    equipment:'оснащение',
+    light:'свет',
+    decor:'декор',
+    training:'обучение персонала',
+    premiumService:'премиум-сервис',
+    finish:'финальный штрих',
+    premium:'премиум-уровень'
+  };
+  function buildZone(parts,firstSprite,chapters){
+    return {
+      parts,
+      props:chapters.map(([,x,y,width],index)=>({x,y,width,sprite:firstSprite+index})),
+      maxUpgrades:chapters.length*parts.length,
+      upgrades:chapters.flatMap(([name])=>parts.map(part=>`${name}: ${zoneParts[part]}`))
+    };
+  }
   const hotelZones={
-    ocean_resort:{position:'reception',icon:'🔔',zone:'Ресепшен',team:'Команда Проскурякова',staff:'Администраторы, консьерж и беллбой',accent:'#f1bd55',maxUpgrades:63,visualIcons:['🛎️','💻','🧳','🗝️','🛋️','🪴','⭐','🌙','👑'],upgrades:buildZonePath(['Стойка регистрации','Система бронирования','Беллбой-сервис','Консьерж-зона','Комфорт лобби','Гостевой сервис','VIP-заселение','Ночной сервис','Ресепшен мечты'],['основа','оснащение','свет','декор','обучение персонала','премиум-сервис','финальный штрих'],63)},
-    alpine_resort:{position:'restaurant',icon:'🍽️',zone:'Ресторан',team:'Команда Коняевой',staff:'Шеф, повара и официанты',accent:'#e77c58',maxUpgrades:20,visualIcons:['🍽️','🥗','👨‍🍳','🕯️','⭐'],upgrades:buildZonePath(['Кухня и подача','Новое меню','Команда поваров','Атмосфера зала','Ресторан мечты'],['основа','оснащение','обучение персонала','премиум-уровень'],20)},
-    grand_city:{position:'rooms',icon:'🛏️',zone:'Номерной фонд',team:'Команда Шкильнюка',staff:'Горничные и гостевой сервис',accent:'#7994f2',maxUpgrades:27,visualIcons:['🛏️','🛎️','🧺','🪞','🛋️','🌿','🛁','✨','👑'],upgrades:buildZonePath(['Подготовка номеров','Сервис в номере','Чистота и текстиль','Дизайн и зеркала','Комфорт и мебель','Озеленение','Ванные комнаты','Люксы','Номера мечты'],['основа','оснащение','премиум-уровень'],27)}
+    ocean_resort:{
+      position:'reception',icon:'🔔',zone:'Ресепшен',team:'Команда Проскурякова',
+      staff:'Администраторы, консьерж и беллбой',accent:'#f1bd55',
+      ...buildZone(['base','equipment','light','decor','training','premiumService','finish'],0,[
+        ['Стойка регистрации',72,51,10],
+        ['Система бронирования',92,52,10],
+        ['Беллбой-сервис',24,73,16],
+        ['Консьерж-зона',51,33,17],
+        ['Комфорт лобби',64,82,22],
+        ['Гостевой сервис',87,76,16],
+        ['VIP-заселение',72,28,14],
+        ['Ночной сервис',88,29,11],
+        ['Ресепшен мечты',63,37,13]
+      ])
+    },
+    alpine_resort:{
+      position:'restaurant',icon:'🍽️',zone:'Ресторан',team:'Команда Коняевой',
+      staff:'Шеф, повара и официанты',accent:'#e77c58',
+      ...buildZone(['base','equipment','training','premium'],9,[
+        ['Кухня и подача',56,53,19],
+        ['Новое меню',24,37,17],
+        ['Команда поваров',62,37,24],
+        ['Атмосфера зала',39,77,22],
+        ['Ресторан мечты',67,81,24]
+      ])
+    },
+    grand_city:{
+      position:'rooms',icon:'🛏️',zone:'Номерной фонд',team:'Команда Шкильнюка',
+      staff:'Горничные и гостевой сервис',accent:'#7994f2',
+      ...buildZone(['base','equipment','premium'],14,[
+        ['Подготовка номеров',30,39,29],
+        ['Сервис в номере',87,39,11],
+        ['Чистота и текстиль',85,81,16],
+        ['Дизайн и зеркала',42,29,14],
+        ['Комфорт и мебель',63,85,23],
+        ['Озеленение',93,39,12],
+        ['Ванные комнаты',40,81,21],
+        ['Люксы',58,41,14],
+        ['Номера мечты',55,58,15]
+      ])
+    }
   };
   const zoneState=(team,zone)=>{
     const earned=team.fact_amount>=team.mission_amount?zone.maxUpgrades:teamCoins(team);
@@ -321,14 +374,28 @@
     const tokens='<i></i>'.repeat(Math.min(coins,3));
     return `<div class="zone-visual__coins" role="img" aria-label="Собрано монет: ${fmt(coins)}"><span aria-hidden="true">${tokens}</span><b>${fmt(coins)}</b></div>`;
   }
+  const spritePosition=index=>`--sprite-x:${index%5*25}%;--sprite-y:${Math.floor(index/5)*25}%`;
+  function zoneInterior(zone,upgrades){
+    return zone.props.map((prop,index)=>{
+      const firstUpgrade=index*zone.parts.length;
+      const visibleParts=zone.parts.slice(0,Math.max(0,upgrades-firstUpgrade));
+      if(!visibleParts.length) return '';
+      const details=visibleParts.map((part,step)=>
+        `<i class="zone-prop__${part}" data-upgrade="${firstUpgrade+step+1}"></i>`
+      ).join('');
+      return `<div class="zone-prop" style="--x:${prop.x}%;--y:${prop.y}%;--width:${prop.width}%;--depth:${prop.y};${spritePosition(prop.sprite)}">${details}</div>`;
+    }).join('');
+  }
   function zoneVisual(team){
     const zone=hotelZones[team.team_key]||hotelZones.grand_city;
     const state=zoneState(team,zone);
-    const unlocked=Math.min(zone.visualIcons.length,Math.ceil(state.upgrades/(zone.maxUpgrades/zone.visualIcons.length)));
-    const pips=Array.from({length:zone.maxUpgrades},(_,i)=>`<i class="${i<state.upgrades?'is-built':''}${i===state.upgrades-1?' is-latest':''}"></i>`).join('');
-    const objects=zone.visualIcons.map((icon,i)=>`<i class="${i<unlocked?'is-built':''}" title="${esc(zone.upgrades[Math.min(zone.upgrades.length-1,Math.ceil((i+1)*zone.maxUpgrades/zone.visualIcons.length)-1)])}">${icon}</i>`).join('');
     const current=state.upgrades?zone.upgrades[state.upgrades-1]:'Зона ждёт первый апгрейд';
-    return `<div class="zone-visual ${zone.position}" style="--zone-accent:${zone.accent};--zone-progress:${state.progress}%;--zone-dim:${Math.max(.08,.44-state.progress/280)}"><div class="zone-visual__head"><span>${zone.icon} ${esc(zone.zone)}</span><b>${state.upgrades}/${zone.maxUpgrades}</b></div>${zoneCoinBadge(teamCoins(team))}<div class="zone-visual__objects" aria-hidden="true">${objects}</div><div class="zone-visual__pips" aria-label="Открыто ${state.upgrades} из ${zone.maxUpgrades} улучшений">${pips}</div><strong>${esc(current)}</strong></div>`;
+    return `<div class="zone-visual ${zone.position}" style="--zone-accent:${zone.accent};--zone-dim:${Math.max(.08,.44-state.progress/280)}">
+      <div class="zone-visual__interior" aria-hidden="true">${zoneInterior(zone,state.upgrades)}</div>
+      <div class="zone-visual__head"><span>${zone.icon} ${esc(zone.zone)}</span><b>${state.upgrades}/${zone.maxUpgrades}</b></div>
+      ${zoneCoinBadge(teamCoins(team))}
+      <strong>${esc(current)}</strong>
+    </div>`;
   }
   function hotelZoneField(teams){
     const visualOrder=['ocean_resort','alpine_resort','grand_city'].map(key=>teams.find(t=>t.team_key===key)).filter(Boolean);

@@ -54,6 +54,7 @@
 .zone-visual.rooms{right:1%}
 .zone-visual__head{
   position:absolute;
+  z-index:1;
   top:8%;
   left:7%;
   right:7%;
@@ -73,7 +74,8 @@
 .zone-visual__head b{color:var(--zone-accent)}
 .zone-visual__coins{
   position:absolute;
-  top:30%;
+  z-index:1;
+  bottom:7%;
   left:50%;
   transform:translateX(-50%);
   display:flex;
@@ -100,61 +102,93 @@
   box-shadow:0 2px #955319;
 }
 .zone-visual__coins i+i{margin-left:-.48em}
-.zone-visual__objects{
+.zone-visual__interior{
   position:absolute;
-  left:7%;
-  right:7%;
-  bottom:21%;
-  display:flex;
-  align-items:flex-end;
-  justify-content:center;
-  flex-wrap:wrap;
-  gap:5px;
+  z-index:0;
+  inset:0;
 }
-.zone-visual__objects i{
-  display:grid;
-  width:clamp(22px,2.2vw,34px);
+.zone-prop{
+  position:absolute;
+  z-index:var(--depth);
+  left:var(--x);
+  top:var(--y);
+  width:var(--width);
   aspect-ratio:1;
-  place-items:center;
-  border:1px solid rgba(255,255,255,.18);
-  border-radius:50%;
-  background:rgba(8,14,32,.55);
-  opacity:.18;
-  filter:grayscale(1);
-  transform:translateY(8px) scale(.7);
-  font-size:clamp(12px,1.35vw,20px);
-  font-style:normal;
-  transition:opacity .55s ease,transform .55s cubic-bezier(.2,.9,.2,1.2),filter .55s ease;
+  transform:translate(-50%,-96%);
 }
-.zone-visual__objects i.is-built{
-  border-color:#fff0a4;
-  background:color-mix(in srgb,var(--zone-accent) 72%,#18213d);
-  opacity:1;
-  filter:none;
-  transform:none;
-  box-shadow:0 0 13px color-mix(in srgb,var(--zone-accent) 84%,transparent);
+.zone-prop>i{position:absolute}
+.zone-prop__base,
+.zone-prop__decor,
+.zone-prop__finish{
+  background-image:url("./assets/hotel-interior-upgrades.png?v=1");
+  background-size:500% 500%;
 }
-.zone-visual__pips{
-  position:absolute;
-  left:7%;
-  right:7%;
-  bottom:10%;
-  display:grid;
-  grid-template-columns:repeat(21,minmax(2px,1fr));
-  gap:2px;
+.zone-prop__base{
+  inset:0;
+  background-position:var(--sprite-x) var(--sprite-y);
+  filter:drop-shadow(0 2px 1px #45230c68);
 }
-.zone-visual__pips i{
-  height:4px;
-  border-radius:999px;
-  background:rgba(255,255,255,.24);
+.zone-prop__equipment{
+  bottom:8%;
+  right:1%;
+  width:29%;
+  height:21%;
+  border:1px solid #672f18;
+  border-radius:18%;
+  background:
+    linear-gradient(90deg,transparent 21%,#e7ba63 22% 36%,transparent 37% 64%,#e7ba63 65% 79%,transparent 80%),
+    linear-gradient(#9d5631 46%,#69341e 48%);
+  box-shadow:0 1px 1px #31180680;
 }
-.zone-visual__pips i.is-built{
-  background:linear-gradient(90deg,var(--zone-accent),#fff19b);
-  box-shadow:0 0 5px var(--zone-accent);
+.zone-prop__light{
+  z-index:-1;
+  inset:-29% -29% -10%;
+  background:radial-gradient(ellipse,#ffe09c 0%,#f9cc767a 32%,transparent 70%);
 }
-.zone-visual__pips i.is-latest{animation:visual-upgrade-pulse 1.5s ease-in-out infinite}
+.zone-prop__decor{
+  left:-19%;
+  bottom:0;
+  width:45%;
+  aspect-ratio:1;
+  background-position:100% 100%;
+  filter:drop-shadow(0 1px 1px #45230c68);
+}
+.zone-prop__training{
+  top:58%;
+  right:-12%;
+  width:24%;
+  height:29%;
+  border:1px solid #783e23;
+  border-radius:14%;
+  transform:rotate(13deg);
+  background:repeating-linear-gradient(#f9e9af 0 19%,#ba914e 20% 26%,#f9e9af 27% 36%);
+  box-shadow:0 1px 1px #31180680;
+}
+.zone-prop__premiumService,
+.zone-prop__premium{
+  top:15%;
+  right:0;
+  width:23%;
+  aspect-ratio:1;
+  background:linear-gradient(130deg,#fff4bc,#d38c24 65%,#793411);
+  clip-path:polygon(50% 0,63% 34%,100% 38%,72% 62%,81% 100%,50% 81%,19% 100%,28% 62%,0 38%,37% 34%);
+}
+.zone-prop__premium{
+  width:29%;
+  background:linear-gradient(130deg,#fff6d5,#edc364 62%,#8f4516);
+}
+.zone-prop__finish{
+  z-index:-1;
+  left:-7%;
+  bottom:-19%;
+  width:114%;
+  aspect-ratio:1;
+  background-position:75% 100%;
+  transform:scaleY(.44) translateY(52%);
+}
 .zone-visual>strong{
   position:absolute;
+  z-index:1;
   left:7%;
   right:7%;
   bottom:2.5%;
@@ -167,7 +201,6 @@
   white-space:nowrap;
   text-shadow:0 2px 4px rgba(0,0,0,.7);
 }
-@keyframes visual-upgrade-pulse{0%,100%{transform:scaleX(1);filter:brightness(1)}50%{transform:scaleX(1.8);filter:brightness(1.65)}}
 
 .hotel-zone,
 .hotel-zone.reception,
@@ -204,19 +237,13 @@
 
 @media(max-width:620px){
   .hotel-zones-board{min-height:0;padding:calc(56.28% + 18px) 12px 14px;border-radius:17px}
-  .hotel-zones-board__caption{top:10px;padding:7px 10px}
-  .hotel-zones-board__caption b{font-size:11px}
-  .hotel-zones-board__caption span{font-size:8px}
+  .hotel-zones-board__caption{top:4px;padding:4px 8px}
+  .hotel-zones-board__caption b{font-size:clamp(7px,2.2vw,11px)}
+  .hotel-zones-board__caption span{display:none}
   .hotel-zone,.hotel-zone.reception,.hotel-zone.restaurant,.hotel-zone.rooms{width:100%;padding:14px}
   .zone-upgrade-map{grid-template-columns:repeat(9,minmax(16px,1fr));gap:5px}
-  .zone-visual{top:15%;bottom:4%;border-width:1px;border-radius:7px}
+  .zone-visual{border-width:1px;border-radius:7px}
   .zone-visual__head{top:8%;left:4%;right:4%;padding:2px 3px;font-size:5px}
-  .zone-visual__coins{gap:3px;padding:3px 5px}
-  .zone-visual__objects{left:4%;right:4%;bottom:20%;gap:2px}
-  .zone-visual__objects i{width:12px;font-size:7px}
-  .zone-visual__pips{left:4%;right:4%;bottom:9%;grid-template-columns:repeat(14,minmax(1px,1fr));gap:1px}
-  .zone-visual__pips i{height:2px}
+  .zone-visual__coins{bottom:4%;gap:3px;padding:2px 4px;font-size:10px}
   .zone-visual>strong{display:none}
 }
-
-@media(prefers-reduced-motion:reduce){.zone-visual__pips i.is-latest{animation:none}}
