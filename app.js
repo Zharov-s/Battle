@@ -299,6 +299,7 @@
     return `<section class="shared-hotel-board" aria-label="Общее игровое поле трёх отелей"><img src="./assets/shared-hotel-campground.png?v=2" alt="Нарисованное игровое поле кемпинга с тремя участками для отелей" loading="eager" fetchpriority="high" width="1672" height="941"><div class="shared-hotel-board__legend"><b>Общий кемпинг</b><span>Кто первым откроет следующий объект?</span></div>${teams.map(t=>{const theme=hotelThemes[t.team_key]||hotelThemes.grand_city,coins=Math.floor(t.fact_amount/1000),upgrades=Math.min(300,Math.floor(coins/COINS_PER_UPGRADE)),progress=Math.min(coins/MAX_HOTEL_COINS*100,100),stage=upgrades>=20?3:upgrades>=12?2:upgrades>=1?1:0,next=upgrades>=300?'Все улучшения открыты':upgradeAt(upgrades+1).name;return `<article class="board-hotel ${placement[t.team_key]||'city'} stage-${stage}" style="--team-accent:${theme.accent};--hotel-progress:${progress}%"><header><span>${theme.emoji} ${theme.label}</span><b>${upgrades}/300</b></header><div class="board-hotel__structure" aria-hidden="true"><i class="board-hotel__parking"></i><i class="board-hotel__facade"></i><i class="board-hotel__roof"></i><i class="board-hotel__windows"></i><i class="board-hotel__guest">🧍</i></div><div class="board-hotel__progress"><b></b></div><footer><strong>${esc(t.city_name)}</strong><span>${fmt(coins)} 🪙</span><small>Следующее: ${esc(next)}</small></footer></article>`}).join('')}</section>`;
   }
   const ZONE_UPGRADE_PRICE=30000;
+  const teamCoins=team=>Math.floor(team.fact_amount/ZONE_UPGRADE_PRICE);
   const buildZonePath=(chapters,parts,max)=>Array.from({length:max},(_,i)=>{
     const chapter=chapters[Math.min(Math.floor(i/parts.length),chapters.length-1)];
     return `${chapter}: ${parts[i%parts.length]}`;
@@ -309,12 +310,17 @@
     grand_city:{position:'rooms',icon:'🛏️',zone:'Номерной фонд',team:'Команда Шкильнюка',staff:'Горничные и гостевой сервис',accent:'#7994f2',maxUpgrades:27,visualIcons:['🛏️','🛎️','🧺','🪞','🛋️','🌿','🛁','✨','👑'],upgrades:buildZonePath(['Подготовка номеров','Сервис в номере','Чистота и текстиль','Дизайн и зеркала','Комфорт и мебель','Озеленение','Ванные комнаты','Люксы','Номера мечты'],['основа','оснащение','премиум-уровень'],27)}
   };
   const zoneState=(team,zone)=>{
-    const earned=team.fact_amount>=team.mission_amount?zone.maxUpgrades:Math.floor(team.fact_amount/ZONE_UPGRADE_PRICE);
+    const earned=team.fact_amount>=team.mission_amount?zone.maxUpgrades:teamCoins(team);
     const upgrades=Math.min(zone.maxUpgrades,earned);
     const progress=upgrades/zone.maxUpgrades*100;
     const nextTarget=Math.min((upgrades+1)*ZONE_UPGRADE_PRICE,team.mission_amount);
     return {upgrades,progress,nextTarget,remaining:upgrades>=zone.maxUpgrades?0:Math.max(nextTarget-team.fact_amount,0)};
   };
+  function zoneCoinBadge(coins){
+    if(coins<=0) return '';
+    const tokens='<i></i>'.repeat(Math.min(coins,3));
+    return `<div class="zone-visual__coins" role="img" aria-label="Собрано монет: ${fmt(coins)}"><span aria-hidden="true">${tokens}</span><b>${fmt(coins)}</b></div>`;
+  }
   function zoneVisual(team){
     const zone=hotelZones[team.team_key]||hotelZones.grand_city;
     const state=zoneState(team,zone);
@@ -322,7 +328,7 @@
     const pips=Array.from({length:zone.maxUpgrades},(_,i)=>`<i class="${i<state.upgrades?'is-built':''}${i===state.upgrades-1?' is-latest':''}"></i>`).join('');
     const objects=zone.visualIcons.map((icon,i)=>`<i class="${i<unlocked?'is-built':''}" title="${esc(zone.upgrades[Math.min(zone.upgrades.length-1,Math.ceil((i+1)*zone.maxUpgrades/zone.visualIcons.length)-1)])}">${icon}</i>`).join('');
     const current=state.upgrades?zone.upgrades[state.upgrades-1]:'Зона ждёт первый апгрейд';
-    return `<div class="zone-visual ${zone.position}" style="--zone-accent:${zone.accent};--zone-progress:${state.progress}%;--zone-dim:${Math.max(.08,.44-state.progress/280)}"><div class="zone-visual__head"><span>${zone.icon} ${esc(zone.zone)}</span><b>${state.upgrades}/${zone.maxUpgrades}</b></div><div class="zone-visual__objects" aria-hidden="true">${objects}</div><div class="zone-visual__pips" aria-label="Открыто ${state.upgrades} из ${zone.maxUpgrades} улучшений">${pips}</div><strong>${esc(current)}</strong></div>`;
+    return `<div class="zone-visual ${zone.position}" style="--zone-accent:${zone.accent};--zone-progress:${state.progress}%;--zone-dim:${Math.max(.08,.44-state.progress/280)}"><div class="zone-visual__head"><span>${zone.icon} ${esc(zone.zone)}</span><b>${state.upgrades}/${zone.maxUpgrades}</b></div>${zoneCoinBadge(teamCoins(team))}<div class="zone-visual__objects" aria-hidden="true">${objects}</div><div class="zone-visual__pips" aria-label="Открыто ${state.upgrades} из ${zone.maxUpgrades} улучшений">${pips}</div><strong>${esc(current)}</strong></div>`;
   }
   function hotelZoneField(teams){
     const visualOrder=['ocean_resort','alpine_resort','grand_city'].map(key=>teams.find(t=>t.team_key===key)).filter(Boolean);
@@ -337,7 +343,7 @@
   function teamResults(teams){
     const order=['alpine_resort','ocean_resort','grand_city'];
     const sorted=order.map(key=>teams.find(t=>t.team_key===key)).filter(Boolean);
-    return `<section class="team-results" aria-label="План и результаты каждой команды">${sorted.map(t=>{const zone=hotelZones[t.team_key]||hotelZones.grand_city,coins=Math.floor(t.fact_amount/ZONE_UPGRADE_PRICE),progress=Math.min(t.progress_percent,100),percent=t.progress_percent.toFixed(1).replace('.',',');return `<article class="card team-result" style="--team-accent:${zone.accent};--team-progress:${progress}%"><header><span>${zone.icon} ${zone.zone}</span><b>${esc(t.team_name)}</b></header><div class="team-result__numbers"><div><span>План команды</span><strong>${money(t.mission_amount)}</strong></div><div><span>Факт команды</span><strong>${money(t.fact_amount)}</strong></div><div class="team-result__percent"><span>Выполнение плана</span><strong>${percent}%</strong></div></div><div class="team-result__progress"><i><b></b></i><span>${percent}%</span></div><div class="team-result__coins">Собрано монет: <strong>${fmt(coins)} 🪙</strong> <span>по 1 монете за каждые 30 000 ₽</span></div></article>`}).join('')}</section>`;
+    return `<section class="team-results" aria-label="План и результаты каждой команды">${sorted.map(t=>{const zone=hotelZones[t.team_key]||hotelZones.grand_city,coins=teamCoins(t),progress=Math.min(t.progress_percent,100),percent=t.progress_percent.toFixed(1).replace('.',',');return `<article class="card team-result" style="--team-accent:${zone.accent};--team-progress:${progress}%"><header><span>${zone.icon} ${zone.zone}</span><b>${esc(t.team_name)}</b></header><div class="team-result__numbers"><div><span>План команды</span><strong>${money(t.mission_amount)}</strong></div><div><span>Факт команды</span><strong>${money(t.fact_amount)}</strong></div><div class="team-result__percent"><span>Выполнение плана</span><strong>${percent}%</strong></div></div><div class="team-result__progress"><i><b></b></i><span>${percent}%</span></div><div class="team-result__coins">Собрано монет: <strong>${fmt(coins)} 🪙</strong> <span>по 1 монете за каждые 30 000 ₽</span></div></article>`}).join('')}</section>`;
   }
   function render(data){
     charts.splice(0).forEach(c=>c.dispose());
